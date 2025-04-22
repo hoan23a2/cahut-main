@@ -54,19 +54,23 @@ fun LoginScreen(navController: NavController) {
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .windowInsetsPadding(WindowInsets.navigationBars)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .verticalScroll(scrollState)
+                .padding(16.dp)
+                .windowInsetsPadding(WindowInsets.ime),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            Spacer(modifier = Modifier.weight(1f))
+
             Text(
                 text = "Chào mừng trở lại",
                 style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(bottom = 32.dp)
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             OutlinedTextField(
@@ -91,9 +95,7 @@ fun LoginScreen(navController: NavController) {
                 onValueChange = { password = it },
                 label = { Text("Mật khẩu", color = MaterialTheme.colorScheme.onSurface) },
                 visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
+                modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = MaterialTheme.colorScheme.surface,
                     unfocusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -113,8 +115,6 @@ fun LoginScreen(navController: NavController) {
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
-
-            Spacer(modifier = Modifier.height(32.dp))
 
             Button(
                 onClick = {
@@ -146,8 +146,6 @@ fun LoginScreen(navController: NavController) {
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
@@ -164,6 +162,8 @@ fun LoginScreen(navController: NavController) {
                     }
                 )
             }
+
+            Spacer(modifier = Modifier.weight(1f))
         }
     }
 }
