@@ -31,12 +31,25 @@ import androidx.compose.ui.res.painterResource
 import com.example.cahut.R
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 
 @Composable
 fun GameLobbyScreen(navController: NavController) {
     var gameRoomId by remember { mutableStateOf("") }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    var showQuizDialog by remember { mutableStateOf(false) }
+
+    if (showQuizDialog) {
+        QuizSelectionDialog(
+            onDismiss = { showQuizDialog = false },
+            onQuizSelected = { selectedQuiz ->
+                showQuizDialog = false
+                navController.navigate(Screen.WaitingRoom.createRoute(isHost = true))
+            }
+        )
+    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -240,9 +253,7 @@ fun GameLobbyScreen(navController: NavController) {
                     )
 
                     Button(
-                        onClick = { 
-                            navController.navigate(Screen.WaitingRoom.createRoute(isHost = true))
-                        },
+                        onClick = { showQuizDialog = true },
                         modifier = Modifier
                             .width(160.dp)
                             .height(48.dp),
@@ -315,38 +326,142 @@ fun GameLobbyScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Recent Games Section
+            // Quiz Library Section
             Text(
-                text = "Phòng Gần Đây",
+                text = "Thư viện Quiz",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Recent games card
+            // Quiz Library Card
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .height(200.dp)
                     .padding(vertical = 8.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        text = "Chưa có phòng nào",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
+                // Mock data for quiz list
+                val quizzes = remember {
+                    listOf(
+                        "Quiz Toán Học",
+                        "Quiz Tiếng Anh",
+                        "Quiz Lịch Sử",
+                        "Quiz Địa Lý",
+                        "Quiz Văn Học",
+                        "Quiz Vật Lý"
                     )
+                }
+
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(vertical = 8.dp)
+                ) {
+                    items(quizzes) { quiz ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = quiz,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            IconButton(
+                                onClick = { /* Handle edit quiz */ }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Chỉnh sửa Quiz",
+                                    tint = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                        if (quiz != quizzes.last()) {
+                            Divider(
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+                            )
+                        }
+                    }
                 }
             }
         }
     }
+}
+
+@Composable
+fun QuizSelectionDialog(
+    onDismiss: () -> Unit,
+    onQuizSelected: (String) -> Unit
+) {
+    val quizzes = remember {
+        listOf(
+            "Quiz Toán Học",
+            "Quiz Tiếng Anh",
+            "Quiz Lịch Sử",
+            "Quiz Địa Lý",
+            "Quiz Văn Học",
+            "Quiz Vật Lý"
+        )
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Chọn Quiz cho phòng",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(300.dp)
+            ) {
+                items(quizzes) { quiz ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onQuizSelected(quiz) }
+                            .padding(vertical = 12.dp, horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = quiz,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                    if (quiz != quizzes.last()) {
+                        Divider(
+                            modifier = Modifier.padding(horizontal = 8.dp),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Hủy")
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.surface,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    )
 }
 
 @Preview(
