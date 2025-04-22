@@ -52,6 +52,12 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation("androidx.sqlite:sqlite-ktx:2.4.0")
     implementation("io.coil-kt:coil-compose:2.4.0")
+    implementation("androidx.compose.material:material-icons-extended:1.5.4")
+    
+    // QR Code dependencies
+    implementation("com.google.zxing:core:3.5.2")
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
+    
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

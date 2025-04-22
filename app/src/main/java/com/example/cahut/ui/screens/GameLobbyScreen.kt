@@ -29,6 +29,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
 import com.example.cahut.R
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 
 @Composable
 fun GameLobbyScreen(navController: NavController) {
@@ -133,33 +135,50 @@ fun GameLobbyScreen(navController: NavController) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 8.dp)
+                        .fillMaxHeight()
+                        .padding(horizontal = 20.dp, vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Start,
+                        horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
                             Text(
                                 text = "Tham gia phòng?",
                                 style = MaterialTheme.typography.titleSmall.copy(
                                     color = Color.Black,
                                     fontWeight = FontWeight.Bold
-                                )
+                                ),
+                                textAlign = TextAlign.Center
                             )
                             Text(
                                 text = "Nhập mã PIN:",
                                 style = MaterialTheme.typography.titleSmall.copy(
                                     color = Color.Black,
                                     fontWeight = FontWeight.Bold
-                                )
+                                ),
+                                textAlign = TextAlign.Center
                             )
                         }
                         Spacer(modifier = Modifier.width(16.dp))
                         OutlinedTextField(
                             value = gameRoomId,
-                            onValueChange = { gameRoomId = it },
+                            onValueChange = { 
+                                // Only allow numbers and limit to 6 digits
+                                if (it.length <= 6 && it.all { char -> char.isDigit() }) {
+                                    gameRoomId = it
+                                    // Check if the entered PIN is correct (123456)
+                                    if (it == "123456") {
+                                        // Navigate to WaitingRoom screen
+                                        navController.navigate(Screen.WaitingRoom.route)
+                                    }
+                                }
+                            },
                             modifier = Modifier
                                 .height(50.dp)
                                 .width(140.dp),
@@ -183,7 +202,10 @@ fun GameLobbyScreen(navController: NavController) {
                                 fontSize = 15.sp,
                                 textAlign = TextAlign.Center
                             ),
-                            singleLine = true
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number
+                            )
                         )
                     }
                 }
@@ -218,7 +240,9 @@ fun GameLobbyScreen(navController: NavController) {
                     )
 
                     Button(
-                        onClick = { /* Handle create game */ },
+                        onClick = { 
+                            navController.navigate(Screen.WaitingRoom.createRoute(isHost = true))
+                        },
                         modifier = Modifier
                             .width(160.dp)
                             .height(48.dp),

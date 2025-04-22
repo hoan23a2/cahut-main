@@ -10,6 +10,8 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.example.cahut.navigation.Screen
 import com.example.cahut.ui.screens.DatabaseDebugScreen
 import com.example.cahut.ui.screens.GameLobbyScreen
@@ -20,6 +22,7 @@ import com.example.cahut.ui.screens.CreateQuizSlideScreen
 import com.example.cahut.ui.screens.PlayQuizScreen
 import com.example.cahut.ui.screens.QuizScoreScreen
 import com.example.cahut.ui.screens.QuizResultScreen
+import com.example.cahut.ui.screens.WaitingRoomScreen
 import com.example.cahut.ui.theme.GameLobbyTheme
 
 class MainActivity : ComponentActivity() {
@@ -53,6 +56,21 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(Screen.CreateQuizSlide.route) {
                             CreateQuizSlideScreen(navController)
+                        }
+                        composable(
+                            route = Screen.WaitingRoom.route,
+                            arguments = listOf(
+                                navArgument("isHost") {
+                                    type = NavType.BoolType
+                                    defaultValue = false
+                                }
+                            )
+                        ) { backStackEntry ->
+                            val isHost = backStackEntry.arguments?.getBoolean("isHost") ?: false
+                            WaitingRoomScreen(
+                                navController = navController,
+                                isHost = isHost
+                            )
                         }
                         composable(Screen.PlayQuiz.route) {
                             PlayQuizScreen(navController)
