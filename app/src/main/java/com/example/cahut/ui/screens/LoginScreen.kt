@@ -12,20 +12,43 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.cahut.data.repository.AccountRepository
 import com.example.cahut.navigation.Screen
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
 import com.example.cahut.ui.theme.GameLobbyTheme
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.cahut.ui.viewmodels.LoginViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(navController: NavController) {
-    var usernameOrEmail by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val context = LocalContext.current
-    val accountRepository = remember { AccountRepository(context) }
+    val viewModel: LoginViewModel = viewModel()
+    val loginState by viewModel.loginState.collectAsState()
+    val scope = rememberCoroutineScope()
+    
+    LaunchedEffect(Unit) {
+        viewModel.initialize(context)
+    }
+    
+    LaunchedEffect(loginState.isLoggedIn) {
+        if (loginState.isLoggedIn) {
+            navController.navigate(Screen.GameLobby.route) {
+                popUpTo(Screen.Login.route) { inclusive = true }
+            }
+        }
+    }
+    
+    LaunchedEffect(loginState.error) {
+        loginState.error?.let { error ->
+            Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+            viewModel.clearError()
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -47,9 +70,9 @@ fun LoginScreen(navController: NavController) {
             )
 
             OutlinedTextField(
-                value = usernameOrEmail,
-                onValueChange = { usernameOrEmail = it },
-                label = { Text("Tài khoản", color = MaterialTheme.colorScheme.onSurface) },
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Email", color = MaterialTheme.colorScheme.onSurface) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 16.dp),
@@ -95,11 +118,8 @@ fun LoginScreen(navController: NavController) {
 
             Button(
                 onClick = {
-                    if (usernameOrEmail.isNotEmpty() && password.isNotEmpty()) {
-                        // Handle login
-                        navController.navigate(Screen.GameLobby.route) {
-                            popUpTo(Screen.Login.route) { inclusive = true }
-                        }
+                    if (email.isNotEmpty() && password.isNotEmpty()) {
+                        viewModel.login(email, password)
                     } else {
                         Toast.makeText(context, "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show()
                     }
@@ -110,12 +130,20 @@ fun LoginScreen(navController: NavController) {
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
                 ),
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(8.dp),
+                enabled = !loginState.isLoading
             ) {
-                Text(
-                    text = "Đăng nhập",
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
+                if (loginState.isLoading) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                } else {
+                    Text(
+                        text = "Đăng nhập",
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
