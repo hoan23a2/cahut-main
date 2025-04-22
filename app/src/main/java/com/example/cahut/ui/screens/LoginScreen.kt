@@ -21,6 +21,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.cahut.ui.viewmodels.LoginViewModel
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 
 @Composable
 fun LoginScreen(navController: NavController) {
@@ -30,6 +32,7 @@ fun LoginScreen(navController: NavController) {
     val viewModel: LoginViewModel = viewModel()
     val loginState by viewModel.loginState.collectAsState()
     val scope = rememberCoroutineScope()
+    val scrollState = rememberScrollState()
     
     LaunchedEffect(Unit) {
         viewModel.initialize(context)
@@ -54,23 +57,20 @@ fun LoginScreen(navController: NavController) {
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .windowInsetsPadding(WindowInsets.navigationBars)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
-                .padding(16.dp)
-                .windowInsetsPadding(WindowInsets.ime),
+                .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.Center
         ) {
-            Spacer(modifier = Modifier.weight(1f))
-
             Text(
                 text = "Chào mừng trở lại",
                 style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.padding(bottom = 32.dp)
             )
 
             OutlinedTextField(
@@ -95,7 +95,9 @@ fun LoginScreen(navController: NavController) {
                 onValueChange = { password = it },
                 label = { Text("Mật khẩu", color = MaterialTheme.colorScheme.onSurface) },
                 visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = MaterialTheme.colorScheme.surface,
                     unfocusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -115,6 +117,8 @@ fun LoginScreen(navController: NavController) {
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
+
+            Spacer(modifier = Modifier.height(32.dp))
 
             Button(
                 onClick = {
@@ -146,6 +150,8 @@ fun LoginScreen(navController: NavController) {
                 }
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
@@ -162,8 +168,6 @@ fun LoginScreen(navController: NavController) {
                     }
                 )
             }
-
-            Spacer(modifier = Modifier.weight(1f))
         }
     }
 }

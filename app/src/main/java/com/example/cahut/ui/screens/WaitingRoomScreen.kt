@@ -32,12 +32,14 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.Color.BLACK
-import android.graphics.Color.WHITE
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 import androidx.compose.ui.graphics.asImageBitmap
-import android.graphics.Bitmap.createBitmap
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.rememberNavController
+import com.example.cahut.navigation.Screen
+import com.example.cahut.ui.theme.GameLobbyTheme
 
 @Composable
 fun WaitingRoomScreen(
@@ -47,10 +49,12 @@ fun WaitingRoomScreen(
 ) {
     val context = LocalContext.current
     var showQrDialog by remember { mutableStateOf(false) }
+    val qrCodeBitmap = remember(roomCode) { generateQRCode(roomCode) }
     
     if (showQrDialog) {
         QrCodeDialog(
             roomCode = roomCode,
+            qrCodeBitmap = qrCodeBitmap,
             onDismiss = { showQrDialog = false }
         )
     }
@@ -245,7 +249,11 @@ fun WaitingRoomScreen(
 }
 
 @Composable
-fun QrCodeDialog(roomCode: String, onDismiss: () -> Unit) {
+fun QrCodeDialog(
+    roomCode: String,
+    qrCodeBitmap: ImageBitmap?,
+    onDismiss: () -> Unit
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
@@ -274,12 +282,9 @@ fun QrCodeDialog(roomCode: String, onDismiss: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                val qrBitmap = remember(roomCode) {
-                    generateQrCode(roomCode)
-                }
-                qrBitmap?.let { bitmap ->
+                qrCodeBitmap?.let { bitmap ->
                     Image(
-                        bitmap = bitmap.asImageBitmap(),
+                        bitmap = bitmap,
                         contentDescription = "Mã QR",
                         modifier = Modifier
                             .size(250.dp)
@@ -298,25 +303,40 @@ fun QrCodeDialog(roomCode: String, onDismiss: () -> Unit) {
         confirmButton = {},
         modifier = Modifier
             .padding(16.dp)
-            .fillMaxWidth(0.9f)  // Take 90% of screen width
+            .fillMaxWidth(0.9f)
     )
 }
 
-private fun generateQrCode(content: String): Bitmap? {
+private fun generateQRCode(content: String): ImageBitmap? {
+    val size = 512
+    val qrCodeWriter = QRCodeWriter()
     return try {
-        val writer = QRCodeWriter()
-        val bitMatrix = writer.encode(content, BarcodeFormat.QR_CODE, 512, 512)
+        val bitMatrix = qrCodeWriter.encode(content, BarcodeFormat.QR_CODE, size, size)
         val width = bitMatrix.width
         val height = bitMatrix.height
-        val bitmap = createBitmap(width, height, Bitmap.Config.RGB_565)
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         
         for (x in 0 until width) {
             for (y in 0 until height) {
-                bitmap.setPixel(x, y, if (bitMatrix[x, y]) BLACK else WHITE)
+                bitmap.setPixel(x, y, if (bitMatrix.get(x, y)) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
             }
         }
-        bitmap
+        
+        bitmap.asImageBitmap()
     } catch (e: Exception) {
+        e.printStackTrace()
         null
+    }
+}
+
+@Preview(
+    name = "Waiting Room Screen",
+    showBackground = true,
+    showSystemUi = true
+)
+@Composable
+fun WaitingRoomScreenPreview() {
+    GameLobbyTheme {
+        WaitingRoomScreen(rememberNavController())
     }
 } 
