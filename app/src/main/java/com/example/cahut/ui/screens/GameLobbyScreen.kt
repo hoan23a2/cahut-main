@@ -628,6 +628,72 @@ fun ExamItem(
     }
 }
 
+@Composable
+fun QuizSelectionDialog(
+    onDismiss: () -> Unit,
+    onQuizSelected: (String) -> Unit
+) {
+    val quizzes = remember {
+        listOf(
+            "Quiz Toán Học",
+            "Quiz Tiếng Anh",
+            "Quiz Lịch Sử",
+            "Quiz Địa Lý",
+            "Quiz Văn Học",
+            "Quiz Vật Lý"
+        )
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Chọn Quiz cho phòng",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(300.dp)
+            ) {
+                items(quizzes) { quiz ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onQuizSelected(quiz) }
+                            .padding(vertical = 12.dp, horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = quiz,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                    if (quiz != quizzes.last()) {
+                        Divider(
+                            modifier = Modifier.padding(horizontal = 8.dp),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Hủy")
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.surface,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    )
+}
+
 @Preview(
     name = "Game Lobby Screen",
     showBackground = true,
