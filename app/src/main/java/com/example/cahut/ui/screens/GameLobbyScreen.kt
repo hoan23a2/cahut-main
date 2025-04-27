@@ -1,7 +1,10 @@
 package com.example.cahut.ui.screens
 
+import android.util.Log
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,10 +17,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.cahut.ui.theme.GameLobbyTheme
 import com.example.cahut.navigation.Screen
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.*
 import androidx.compose.foundation.clickable
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
@@ -31,12 +31,45 @@ import androidx.compose.ui.res.painterResource
 import com.example.cahut.R
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
+import com.example.cahut.data.model.Exam
+import com.example.cahut.data.repository.ExamRepository
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import com.example.cahut.data.repository.RoomRepository
 
 @Composable
 fun GameLobbyScreen(navController: NavController) {
     var gameRoomId by remember { mutableStateOf("") }
+    var exams by remember { mutableStateOf<List<Exam>>(emptyList()) }
+    var showCreateExamDialog by remember { mutableStateOf(false) }
+    var showEditExamDialog by remember { mutableStateOf(false) }
+    var showCreateRoomDialog by remember { mutableStateOf(false) }
+    var selectedExam by remember { mutableStateOf<Exam?>(null) }
+    var newExamName by remember { mutableStateOf("") }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val examRepository = remember { ExamRepository(context) }
+    val roomRepository = remember { RoomRepository(context) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        try {
+            exams = examRepository.getExams()
+        } catch (e: Exception) {
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    message = "Lỗi khi tải danh sách đề: ${e.message}",
+                    duration = SnackbarDuration.Short
+                )
+            }
+        }
+    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -48,7 +81,7 @@ fun GameLobbyScreen(navController: NavController) {
                     modifier = Modifier.padding(16.dp),
                     style = MaterialTheme.typography.titleLarge
                 )
-                Divider()
+                HorizontalDivider()
                 NavigationDrawerItem(
                     icon = { Icon(Icons.Default.Edit, contentDescription = "Chỉnh Sửa Hồ Sơ") },
                     label = { Text("Chỉnh Sửa Hồ Sơ") },
@@ -62,7 +95,7 @@ fun GameLobbyScreen(navController: NavController) {
                     modifier = Modifier.padding(horizontal = 12.dp)
                 )
                 NavigationDrawerItem(
-                    icon = { Icon(Icons.Default.List, contentDescription = "Danh Sách Quiz") },
+                    icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Danh Sách Quiz") },
                     label = { Text("Danh Sách Quiz") },
                     selected = false,
                     onClick = { 
@@ -74,7 +107,7 @@ fun GameLobbyScreen(navController: NavController) {
                     modifier = Modifier.padding(horizontal = 12.dp)
                 )
                 NavigationDrawerItem(
-                    icon = { Icon(Icons.Default.ExitToApp, contentDescription = "Đăng Xuất") },
+                    icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Đăng Xuất") },
                     label = { Text("Đăng Xuất") },
                     selected = false,
                     onClick = { 
@@ -169,14 +202,8 @@ fun GameLobbyScreen(navController: NavController) {
                         OutlinedTextField(
                             value = gameRoomId,
                             onValueChange = { 
-                                // Only allow numbers and limit to 6 digits
                                 if (it.length <= 6 && it.all { char -> char.isDigit() }) {
                                     gameRoomId = it
-                                    // Check if the entered PIN is correct (123456)
-                                    if (it == "123456") {
-                                        // Navigate to WaitingRoom screen
-                                        navController.navigate(Screen.WaitingRoom.route)
-                                    }
                                 }
                             },
                             modifier = Modifier
@@ -207,6 +234,38 @@ fun GameLobbyScreen(navController: NavController) {
                                 keyboardType = KeyboardType.Number
                             )
                         )
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    try {
+                                        val room = roomRepository.joinRoom(gameRoomId)
+                                        navController.navigate(Screen.WaitingRoom.createRoute(
+                                            roomId = room.roomId,
+                                            examId = room.examId,
+                                            isHost = false
+                                        ))
+                                    } catch (e: Exception) {
+                                        snackbarHostState.showSnackbar(
+                                            message = "Lỗi khi tham gia phòng: ${e.message}",
+                                            duration = SnackbarDuration.Short
+                                        )
+                                    }
+                                }
+                            },
+                            modifier = Modifier
+                                .padding(start = 8.dp)
+                                .height(50.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF00B074)
+                            ),
+                            shape = RoundedCornerShape(24.dp)
+                        ) {
+                            Text(
+                                text = "Tham gia",
+                                color = Color.White,
+                                fontSize = 15.sp
+                            )
+                        }
                     }
                 }
             }
@@ -240,9 +299,7 @@ fun GameLobbyScreen(navController: NavController) {
                     )
 
                     Button(
-                        onClick = { 
-                            navController.navigate(Screen.WaitingRoom.createRoute(isHost = true))
-                        },
+                        onClick = { showCreateRoomDialog = true },
                         modifier = Modifier
                             .width(160.dp)
                             .height(48.dp),
@@ -291,9 +348,7 @@ fun GameLobbyScreen(navController: NavController) {
                     )
 
                     Button(
-                        onClick = { 
-                            navController.navigate(Screen.CreateQuizInfo.route)
-                        },
+                        onClick = { showCreateExamDialog = true },
                         modifier = Modifier
                             .width(160.dp)
                             .height(48.dp),
@@ -315,33 +370,257 @@ fun GameLobbyScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Recent Games Section
+            // Exams List Section
             Text(
-                text = "Phòng Gần Đây",
+                text = "Danh sách Quiz",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Recent games card
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+            // Exams List
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
+                items(exams) { exam ->
+                    ExamItem(
+                        exam = exam,
+                        onEditClick = {
+                            selectedExam = exam
+                            newExamName = exam.examName
+                            showEditExamDialog = true
+                        },
+                        onDeleteClick = {
+                            scope.launch {
+                                try {
+                                    examRepository.deleteExam(exam._id)
+                                    exams = examRepository.getExams()
+                                    snackbarHostState.showSnackbar(
+                                        message = "Xóa đề thành công!",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                } catch (e: Exception) {
+                                    snackbarHostState.showSnackbar(
+                                        message = "Lỗi khi xóa đề: ${e.message}",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                }
+                            }
+                        },
+                        onAddQuestionClick = {
+                            navController.navigate(Screen.EditQuestions.createRoute(exam._id, exam.examName))
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    // Create Exam Dialog
+    if (showCreateExamDialog) {
+        AlertDialog(
+            onDismissRequest = { showCreateExamDialog = false },
+            title = { Text("Tạo đề mới") },
+            text = {
+                OutlinedTextField(
+                    value = newExamName,
+                    onValueChange = { newExamName = it },
+                    label = { Text("Tên đề") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            try {
+                                examRepository.createExam(newExamName)
+                                exams = examRepository.getExams()
+                                showCreateExamDialog = false
+                                newExamName = ""
+                                snackbarHostState.showSnackbar(
+                                    message = "Tạo đề thành công!",
+                                    duration = SnackbarDuration.Short
+                                )
+                            } catch (e: Exception) {
+                                snackbarHostState.showSnackbar(
+                                    message = "Lỗi khi tạo đề: ${e.message}",
+                                    duration = SnackbarDuration.Short
+                                )
+                            }
+                        }
+                    }
                 ) {
+                    Text("Tạo")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCreateExamDialog = false }) {
+                    Text("Hủy")
+                }
+            }
+        )
+    }
+
+    // Edit Exam Dialog
+    if (showEditExamDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditExamDialog = false },
+            title = { Text("Sửa đề") },
+            text = {
+                OutlinedTextField(
+                    value = newExamName,
+                    onValueChange = { newExamName = it },
+                    label = { Text("Tên đề") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            try {
+                                selectedExam?.let {
+                                    examRepository.editExam(it._id, newExamName)
+                                    exams = examRepository.getExams()
+                                    showEditExamDialog = false
+                                    newExamName = ""
+                                    snackbarHostState.showSnackbar(
+                                        message = "Sửa đề thành công!",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                }
+                            } catch (e: Exception) {
+                                snackbarHostState.showSnackbar(
+                                    message = "Lỗi khi sửa đề: ${e.message}",
+                                    duration = SnackbarDuration.Short
+                                )
+                            }
+                        }
+                    }
+                ) {
+                    Text("Lưu")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditExamDialog = false }) {
+                    Text("Hủy")
+                }
+            }
+        )
+    }
+
+    // Create Room Dialog
+    if (showCreateRoomDialog) {
+        AlertDialog(
+            onDismissRequest = { showCreateRoomDialog = false },
+            title = { Text("Tạo phòng mới") },
+            text = {
+                Column {
                     Text(
-                        text = "Chưa có phòng nào",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        text = "Chọn đề thi:",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    exams.forEach { exam ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                                .clickable { 
+                                    scope.launch {
+                                        try {
+                                            val room = roomRepository.createRoom(exam._id)
+                                            Log.d("GameLobbyScreen", "Room created: ${room.roomId}")
+                                            selectedExam = exam
+                                            showCreateRoomDialog = false
+                                            navController.navigate(Screen.WaitingRoom.createRoute(
+                                                roomId = room.roomId,
+                                                examId = room.examId,
+                                                isHost = true
+                                            ))
+                                        } catch (e: Exception) {
+                                            snackbarHostState.showSnackbar(
+                                                message = "Lỗi khi tạo phòng: ${e.message}",
+                                                duration = SnackbarDuration.Short
+                                            )
+                                        }
+                                    }
+                                },
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (selectedExam?._id == exam._id) 
+                                    Color(0xFF00B074) else Color(0xFF23616A)
+                            )
+                        ) {
+                            Text(
+                                text = exam.examName,
+                                color = Color.White,
+                                modifier = Modifier.padding(16.dp)
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showCreateRoomDialog = false }) {
+                    Text("Hủy")
+                }
+            }
+        )
+    }
+
+    // Add SnackbarHost to show messages
+    Box(modifier = Modifier.fillMaxSize()) {
+        // ... existing content ...
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
+    }
+}
+
+@Composable
+fun ExamItem(
+    exam: Exam,
+    onEditClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+    onAddQuestionClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = exam.examName,
+                style = MaterialTheme.typography.bodyLarge
+            )
+            Row {
+                IconButton(onClick = onAddQuestionClick) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Thêm câu hỏi"
+                    )
+                }
+                IconButton(onClick = onEditClick) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Sửa"
+                    )
+                }
+                IconButton(onClick = onDeleteClick) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Xóa"
                     )
                 }
             }

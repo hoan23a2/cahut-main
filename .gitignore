@@ -12,3 +12,86 @@ local.properties
 /app/build
 *.apk
 *.aab
+
+
+# ---> Android & Kotlin
+
+# Ignore built files
+/build/
+/out/
+
+# Ignore gradle stuff
+.gradle/
+/**/build/
+
+# Ignore local configuration
+/local.properties
+/.idea/
+*.iml
+*.ipr
+*.iws
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore logs
+*.log
+
+# Ignore Android Studio auto-save files
+*.sublime-workspace
+*.sublime-project
+
+# Ignore signing keys
+*.keystore
+*.jks
+
+# Ignore crash reports
+*.stacktrace
+
+# Ignore generated files
+/captures/
+/outputs/
+/generated/
+
+# Ignore Compose specific
+composeGenerated/
+
+# Ignore misc
+/.cxx/
+*.apk
+*.ap_ 
+*.db
+
+# Ignore Kotlin specific
+*.kotlin_module
+*.class
+
+# Ignore NDK (Native dev) stuff
+obj/
+*.so
+
+# Ignore Fastlane metadata
+fastlane/report.xml
+fastlane/screenshots
+fastlane/metadata
+
+# Ignore testing folders
+test-output/
+firebase/
+coverage/
+
+# Ignore local environment settings
+.idea/gradle.xml
+.idea/libraries/
+
+# If you use Mac
+*.swp
+*.lock
+
+# If you use VSCode alongside
+.vscode/
+
+# If you use Jetpack Compose compiler metrics (optional)
+compose-metrics/
+compose-traces/

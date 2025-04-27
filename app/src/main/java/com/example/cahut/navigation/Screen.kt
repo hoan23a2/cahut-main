@@ -7,12 +7,15 @@ sealed class Screen(val route: String) {
     object DatabaseDebug : Screen("database_debug")
     object CreateQuizInfo : Screen("create_quiz_info")
     object CreateQuizSlide : Screen("create_quiz_slide")
-    object WaitingRoom : Screen("waiting_room?isHost={isHost}") {
-        fun createRoute(isHost: Boolean = false) = "waiting_room?isHost=$isHost"
+    object WaitingRoom : Screen("waiting_room/{roomId}/{examId}/{isHost}") {
+        fun createRoute(roomId: String, examId: String, isHost: Boolean) = "waiting_room/$roomId/$examId/$isHost"
     }
     object PlayQuiz : Screen("play_quiz")
     object QuizScore : Screen("quiz_score")
     object QuizResult : Screen("quiz_result")
+    object EditQuestions : Screen("edit_questions/{examId}/{examName}") {
+        fun createRoute(examId: String, examName: String) = "edit_questions/$examId/$examName"
+    }
 }
 
 object NavGraph {

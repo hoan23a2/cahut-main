@@ -23,6 +23,7 @@ import com.example.cahut.ui.screens.PlayQuizScreen
 import com.example.cahut.ui.screens.QuizScoreScreen
 import com.example.cahut.ui.screens.QuizResultScreen
 import com.example.cahut.ui.screens.WaitingRoomScreen
+import com.example.cahut.ui.screens.EditQuestionsScreen
 import com.example.cahut.ui.theme.GameLobbyTheme
 
 class MainActivity : ComponentActivity() {
@@ -60,15 +61,21 @@ class MainActivity : ComponentActivity() {
                         composable(
                             route = Screen.WaitingRoom.route,
                             arguments = listOf(
+                                navArgument("roomId") { type = NavType.StringType },
+                                navArgument("examId") { type = NavType.StringType },
                                 navArgument("isHost") {
                                     type = NavType.BoolType
                                     defaultValue = false
                                 }
                             )
                         ) { backStackEntry ->
+                            val roomId = backStackEntry.arguments?.getString("roomId") ?: ""
+                            val examId = backStackEntry.arguments?.getString("examId") ?: ""
                             val isHost = backStackEntry.arguments?.getBoolean("isHost") ?: false
                             WaitingRoomScreen(
                                 navController = navController,
+                                roomId = roomId,
+                                examId = examId,
                                 isHost = isHost
                             )
                         }
@@ -80,6 +87,21 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(Screen.QuizResult.route) {
                             QuizResultScreen(navController)
+                        }
+                        composable(
+                            route = Screen.EditQuestions.route,
+                            arguments = listOf(
+                                navArgument("examId") { type = NavType.StringType },
+                                navArgument("examName") { type = NavType.StringType }
+                            )
+                        ) { backStackEntry ->
+                            val examId = backStackEntry.arguments?.getString("examId") ?: ""
+                            val examName = backStackEntry.arguments?.getString("examName") ?: ""
+                            EditQuestionsScreen(
+                                navController = navController,
+                                examId = examId,
+                                examName = examName
+                            )
                         }
                     }
                 }

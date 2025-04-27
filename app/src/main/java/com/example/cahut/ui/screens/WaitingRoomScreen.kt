@@ -40,20 +40,49 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
 import com.example.cahut.navigation.Screen
 import com.example.cahut.ui.theme.GameLobbyTheme
+import com.example.cahut.data.model.Player
+import com.example.cahut.data.service.SocketService
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import android.util.Log
 
 @Composable
 fun WaitingRoomScreen(
     navController: NavController, 
-    roomCode: String = "123456",
-    isHost: Boolean = false
+    roomId: String,
+    examId: String,
+    isHost: Boolean
 ) {
     val context = LocalContext.current
     var showQrDialog by remember { mutableStateOf(false) }
-    val qrCodeBitmap = remember(roomCode) { generateQRCode(roomCode) }
+    val qrCodeBitmap = remember(roomId) { generateQRCode(roomId) }
+    val socketService = remember { SocketService(context) }
+    val players by socketService.players.collectAsState()
+    val isCreator by socketService.isCreator.collectAsState()
+    val gameStarted by socketService.gameStarted.collectAsState()
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
     
+    LaunchedEffect(Unit) {
+        Log.d("WaitingRoomScreen", "Connecting to room: $roomId")
+        socketService.connect(roomId)
+    }
+    
+    DisposableEffect(Unit) {
+        onDispose {
+            socketService.disconnect()
+        }
+    }
+    
+    LaunchedEffect(gameStarted) {
+        if (gameStarted) {
+            navController.navigate(Screen.PlayQuiz.route)
+        }
+    }
+
     if (showQrDialog) {
         QrCodeDialog(
-            roomCode = roomCode,
+            roomCode = roomId,
             qrCodeBitmap = qrCodeBitmap,
             onDismiss = { showQrDialog = false }
         )
@@ -109,7 +138,7 @@ fun WaitingRoomScreen(
                         )
 
                         Text(
-                            text = roomCode,
+                            text = roomId,
                             color = Color(0xFF98FF90),
                             fontSize = 48.sp,
                             fontWeight = FontWeight.Bold,
@@ -124,9 +153,14 @@ fun WaitingRoomScreen(
                             IconButton(
                                 onClick = {
                                     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                    val clip = ClipData.newPlainText("Room Code", roomCode)
+                                    val clip = ClipData.newPlainText("Room Code", roomId)
                                     clipboard.setPrimaryClip(clip)
-                                    Toast.makeText(context, "Đã sao chép mã phòng!", Toast.LENGTH_SHORT).show()
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar(
+                                            message = "Đã sao chép mã phòng!",
+                                            duration = SnackbarDuration.Short
+                                        )
+                                    }
                                 }
                             ) {
                                 Icon(
@@ -159,7 +193,7 @@ fun WaitingRoomScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "10 người chơi:",
+                        text = "${players.size} người chơi:",
                         color = Color.White,
                         fontSize = 16.sp
                     )
@@ -175,14 +209,24 @@ fun WaitingRoomScreen(
                             horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
                             contentPadding = PaddingValues(horizontal = 16.dp)
                         ) {
-                            items(10) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(60.dp)
-                                        .clip(CircleShape)
-                                        .background(Color(0xFF00B074))
-                                        .padding(8.dp)
-                                )
+                            items(players) { player ->
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(60.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(0xFF00B074))
+                                            .padding(8.dp)
+                                    )
+                                    Text(
+                                        text = player.username,
+                                        color = Color.White,
+                                        fontSize = 12.sp,
+                                        modifier = Modifier.padding(top = 4.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -208,9 +252,9 @@ fun WaitingRoomScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    if (isHost) {
+                    if (isCreator) {
                         Button(
-                            onClick = { /* Handle start game */ },
+                            onClick = { socketService.startGame(roomId) },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color(0xFF00B074)
                             ),
@@ -219,6 +263,27 @@ fun WaitingRoomScreen(
                         ) {
                             Text(
                                 text = "Bắt đầu",
+                                color = Color.White,
+                                modifier = Modifier.padding(vertical = 4.dp),
+                                fontSize = 16.sp
+                            )
+                        }
+                        
+                        Button(
+                            onClick = { 
+                                socketService.deleteRoom(roomId)
+                                navController.navigate(Screen.GameLobby.route)
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFFF5252)
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp),
+                            shape = RoundedCornerShape(24.dp)
+                        ) {
+                            Text(
+                                text = "Xóa phòng",
                                 color = Color.White,
                                 modifier = Modifier.padding(vertical = 4.dp),
                                 fontSize = 16.sp
@@ -241,10 +306,39 @@ fun WaitingRoomScreen(
                                 textAlign = TextAlign.Center
                             )
                         }
+                        
+                        Button(
+                            onClick = { 
+                                socketService.leaveRoom(roomId)
+                                navController.navigate(Screen.GameLobby.route)
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFFF5252)
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp),
+                            shape = RoundedCornerShape(24.dp)
+                        ) {
+                            Text(
+                                text = "Thoát phòng",
+                                color = Color.White,
+                                modifier = Modifier.padding(vertical = 4.dp),
+                                fontSize = 16.sp
+                            )
+                        }
                     }
                 }
             }
         }
+    }
+
+    // Add SnackbarHost to show messages
+    Box(modifier = Modifier.fillMaxSize()) {
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
 }
 
@@ -337,6 +431,6 @@ private fun generateQRCode(content: String): ImageBitmap? {
 @Composable
 fun WaitingRoomScreenPreview() {
     GameLobbyTheme {
-        WaitingRoomScreen(rememberNavController())
+        WaitingRoomScreen(rememberNavController(), "123456", "", false)
     }
 } 
