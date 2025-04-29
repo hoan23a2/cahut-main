@@ -234,29 +234,47 @@ fun PlayQuizScreen(
 
                     question!!.options.forEachIndexed { index, option ->
                         val optionLetter = ('A' + index).toString()
-            val isSelected = selectedAnswer == option
+                        val isSelected = selectedAnswer == option
                         val isDisabled = selectedAnswer != null
 
-                        Button(
+                        Card(
                             onClick = {
                                 if (selectedAnswer == null) {
                                     selectedAnswer = option
                                     socketService.submitAnswer(roomId, option)
                                 }
                             },
-                modifier = Modifier
-                    .fillMaxWidth()
+                            modifier = Modifier
+                                .fillMaxWidth()
                                 .padding(vertical = 8.dp),
-                            colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isSelected)
-                                    Color(0xFF00B074) else Color(0xFF23616A)
-                ),
-                            enabled = !isDisabled
-            ) {
-                Text(
-                                "$optionLetter. $option",
-                                color = Color.White
-                            )
+                            colors = CardDefaults.cardColors(
+                                containerColor = when {
+                                    isSelected -> Color(0xFF00B074)
+                                    isDisabled -> Color(0xFF23616A)
+                                    else -> Color(0xFF23616A)
+                                }
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "$optionLetter. ",
+                                    color = Color.White,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = option,
+                                    color = Color.White,
+                                    fontSize = 16.sp,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
                         }
                     }
 
@@ -469,7 +487,7 @@ fun PlayQuizScreen(
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
+                            colors = ButtonDefaults.buttonColors(
                                 containerColor = if (isHost)
                                     Color(0xFFDC3545) else Color(0xFF00B074)
                             )
@@ -481,13 +499,13 @@ fun PlayQuizScreen(
                                 tint = Color.White
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-            Text(
+                            Text(
                                 if (isHost) "Xóa phòng" else "Về trang chủ",
                                 color = Color.White
-            )
-        }
-    }
-}
+                            )
+                        }
+                    }
+                }
             }
             else -> {
                 Column(
