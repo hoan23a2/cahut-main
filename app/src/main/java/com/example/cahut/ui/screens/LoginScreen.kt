@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.cahut.navigation.Screen
 import androidx.compose.ui.tooling.preview.Preview
@@ -23,6 +24,12 @@ import com.example.cahut.ui.viewmodels.LoginViewModel
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import com.example.cahut.R
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 
 @Composable
 fun LoginScreen(navController: NavController) {
@@ -66,6 +73,14 @@ fun LoginScreen(navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            Image(
+                painter = painterResource(id = R.drawable.logo),
+                contentDescription = "Logo",
+                modifier = Modifier
+                    .height(120.dp)
+                    .padding(bottom = 32.dp)
+            )
+            
             Text(
                 text = "Chào mừng trở lại",
                 style = MaterialTheme.typography.headlineMedium,
@@ -130,22 +145,31 @@ fun LoginScreen(navController: NavController) {
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp),
+                    .height(56.dp)
+                    .shadow(
+                        elevation = 4.dp,
+                        shape = RoundedCornerShape(8.dp)
+                    ),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = Color(0xFF33b98a),
+                    contentColor = Color.White
                 ),
                 shape = RoundedCornerShape(8.dp),
                 enabled = !loginState.isLoading
             ) {
                 if (loginState.isLoading) {
                     CircularProgressIndicator(
-                        color = MaterialTheme.colorScheme.onPrimary,
+                        color = Color.White,
                         modifier = Modifier.size(24.dp)
                     )
                 } else {
                     Text(
                         text = "Đăng nhập",
-                        color = MaterialTheme.colorScheme.onPrimary
+                        color = Color.White,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp
+                        )
                     )
                 }
             }

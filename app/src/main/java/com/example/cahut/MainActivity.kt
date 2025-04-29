@@ -55,8 +55,14 @@ class MainActivity : ComponentActivity() {
                         composable(Screen.CreateQuizInfo.route) {
                             CreateQuizInfoScreen(navController)
                         }
-                        composable(Screen.CreateQuizSlide.route) {
-                            CreateQuizSlideScreen(navController)
+                        composable(
+                            route = Screen.CreateQuizSlide.route,
+                            arguments = listOf(
+                                navArgument("examId") { type = NavType.StringType }
+                            )
+                        ) { backStackEntry ->
+                            val examId = backStackEntry.arguments?.getString("examId") ?: ""
+                            CreateQuizSlideScreen(navController, examId)
                         }
                         composable(
                             route = Screen.WaitingRoom.route,

@@ -41,6 +41,9 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import com.example.cahut.data.repository.RoomRepository
+import androidx.compose.material.icons.filled.Login
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 
 @Composable
 fun GameLobbyScreen(navController: NavController) {
@@ -57,6 +60,7 @@ fun GameLobbyScreen(navController: NavController) {
     val examRepository = remember { ExamRepository(context) }
     val roomRepository = remember { RoomRepository(context) }
     val snackbarHostState = remember { SnackbarHostState() }
+    var isPinError by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         try {
@@ -204,6 +208,45 @@ fun GameLobbyScreen(navController: NavController) {
                             onValueChange = { 
                                 if (it.length <= 6 && it.all { char -> char.isDigit() }) {
                                     gameRoomId = it
+                                    isPinError = false
+                                    if (it.length == 6) {
+                                        scope.launch {
+                                            try {
+                                                Log.d("GameLobbyScreen", "Joining room with PIN: $it")
+                                                val room = roomRepository.joinRoom(it)
+                                                Log.d("GameLobbyScreen", "Joined room with examId: ${room.examId}")
+                                                if (room.examId == null || room.examId.isBlank()) {
+                                                    isPinError = true
+                                                    snackbarHostState.showSnackbar(
+                                                        message = "Phòng không có đề thi, vui lòng thử lại!",
+                                                        duration = SnackbarDuration.Short
+                                                    )
+                                                    return@launch
+                                                }
+                                                // Kiểm tra examId có tồn tại trong danh sách exam không
+                                                val examExists = exams.any { exam -> exam._id == room.examId }
+                                                if (!examExists) {
+                                                    isPinError = true
+                                                    snackbarHostState.showSnackbar(
+                                                        message = "Đề thi không tồn tại, vui lòng thử lại!",
+                                                        duration = SnackbarDuration.Short
+                                                    )
+                                                    return@launch
+                                                }
+                                                navController.navigate(Screen.WaitingRoom.createRoute(
+                                                    roomId = room.roomId,
+                                                    examId = room.examId,
+                                                    isHost = false
+                                                ))
+                                            } catch (e: Exception) {
+                                                isPinError = true
+                                                snackbarHostState.showSnackbar(
+                                                    message = "Lỗi khi tham gia phòng: ${e.message}",
+                                                    duration = SnackbarDuration.Long
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             },
                             modifier = Modifier
@@ -213,8 +256,8 @@ fun GameLobbyScreen(navController: NavController) {
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedContainerColor = Color.White,
                                 unfocusedContainerColor = Color.White,
-                                focusedBorderColor = Color.Transparent,
-                                unfocusedBorderColor = Color.Transparent
+                                focusedBorderColor = if (isPinError) Color.Red else Color.Transparent,
+                                unfocusedBorderColor = if (isPinError) Color.Red else Color.Transparent
                             ),
                             placeholder = { 
                                 Text(
@@ -348,7 +391,7 @@ fun GameLobbyScreen(navController: NavController) {
                     )
 
                     Button(
-                        onClick = { showCreateExamDialog = true },
+                        onClick = { navController.navigate(Screen.CreateQuizInfo.route) },
                         modifier = Modifier
                             .width(160.dp)
                             .height(48.dp),
@@ -524,41 +567,49 @@ fun GameLobbyScreen(navController: NavController) {
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
-                    exams.forEach { exam ->
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp)
-                                .clickable { 
-                                    scope.launch {
-                                        try {
-                                            val room = roomRepository.createRoom(exam._id)
-                                            Log.d("GameLobbyScreen", "Room created: ${room.roomId}")
-                                            selectedExam = exam
-                                            showCreateRoomDialog = false
-                                            navController.navigate(Screen.WaitingRoom.createRoute(
-                                                roomId = room.roomId,
-                                                examId = room.examId,
-                                                isHost = true
-                                            ))
-                                        } catch (e: Exception) {
-                                            snackbarHostState.showSnackbar(
-                                                message = "Lỗi khi tạo phòng: ${e.message}",
-                                                duration = SnackbarDuration.Short
-                                            )
+                    Column {
+                        exams.forEach { exam ->
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                                    .shadow(
+                                        elevation = 4.dp,
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .clickable { 
+                                        scope.launch {
+                                            try {
+                                                Log.d("GameLobbyScreen", "Creating room with examId: ${exam._id}")
+                                                val room = roomRepository.createRoom(exam._id)
+                                                Log.d("GameLobbyScreen", "Room created with examId: ${room.examId}")
+                                                selectedExam = exam
+                                                showCreateRoomDialog = false
+                                                navController.navigate(Screen.WaitingRoom.createRoute(
+                                                    roomId = room.roomId,
+                                                    examId = room.examId,
+                                                    isHost = true
+                                                ))
+                                            } catch (e: Exception) {
+                                                snackbarHostState.showSnackbar(
+                                                    message = "Lỗi khi tạo phòng: ${e.message}",
+                                                    duration = SnackbarDuration.Short
+                                                )
+                                            }
                                         }
-                                    }
-                                },
-                            colors = CardDefaults.cardColors(
-                                containerColor = if (selectedExam?._id == exam._id) 
-                                    Color(0xFF00B074) else Color(0xFF23616A)
-                            )
-                        ) {
-                            Text(
-                                text = exam.examName,
-                                color = Color.White,
-                                modifier = Modifier.padding(16.dp)
-                            )
+                                    },
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (selectedExam?._id == exam._id) 
+                                        Color(0xFF00B074) else MaterialTheme.colorScheme.background
+                                ),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text(
+                                    text = exam.examName,
+                                    color = if (selectedExam?._id == exam._id) Color.White else MaterialTheme.colorScheme.onBackground,
+                                    modifier = Modifier.padding(16.dp)
+                                )
+                            }
                         }
                     }
                 }

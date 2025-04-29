@@ -8,6 +8,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,6 +25,24 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
 import com.example.cahut.ui.theme.GameLobbyTheme
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import com.example.cahut.data.repository.QuestionRepository
+import com.example.cahut.data.repository.ExamRepository
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.launch
+
+// Data class to represent a question
+data class QuizQuestion(
+    val id: Int,
+    var question: String = "",
+    var isMultipleChoice: Boolean = true,
+    var options: List<String> = listOf("", "", "", ""),
+    var correctAnswer: String = "",
+    var timeLimit: Int = 30,
+    var funFact: String = ""
+)
 
 @Preview(
     name = "Create Quiz Slide Screen",
@@ -32,26 +52,31 @@ import com.example.cahut.ui.theme.GameLobbyTheme
 @Composable
 fun CreateQuizSlideScreenPreview() {
     GameLobbyTheme {
-        CreateQuizSlideScreen(rememberNavController())
+        CreateQuizSlideScreen(rememberNavController(), "")
     }
 }
 
 @Composable
-fun CreateQuizSlideScreen(navController: NavController) {
-    var isMultipleChoice by remember { mutableStateOf(true) }
-    var question by remember { mutableStateOf("") }
-    var funFact by remember { mutableStateOf("") }
+fun CreateQuizSlideScreen(
+    navController: NavController,
+    examId: String
+) {
+    var questions by remember { mutableStateOf(listOf(QuizQuestion(1))) }
+    var currentSlide by remember { mutableStateOf(1) }
+    val context = LocalContext.current
+    val questionRepository = remember { QuestionRepository(context) }
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
     
-    // Multiple Choice specific states
-    var optionA by remember { mutableStateOf("") }
-    var optionB by remember { mutableStateOf("") }
-    var optionC by remember { mutableStateOf("") }
-    var optionD by remember { mutableStateOf("") }
-    var correctOption by remember { mutableStateOf<String?>(null) }
-    
-    // Text Answer specific states
-    var correctAnswer by remember { mutableStateOf("") }
-    var additionalAnswers by remember { mutableStateOf(listOf<String>()) }
+    // Get current question
+    val currentQuestion = questions.find { it.id == currentSlide } ?: questions.first()
+
+    // Function to update a question
+    fun updateQuestion(updatedQuestion: QuizQuestion) {
+        questions = questions.map { 
+            if (it.id == updatedQuestion.id) updatedQuestion else it 
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -67,8 +92,13 @@ fun CreateQuizSlideScreen(navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Tạo Câu Hỏi",
+                text = "Tạo câu hỏi cho đề: $examId",
                 style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            Text(
+                text = "Câu hỏi ${currentQuestion.id}",
+                style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(bottom = 24.dp)
             )
 
@@ -80,9 +110,11 @@ fun CreateQuizSlideScreen(navController: NavController) {
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 Button(
-                    onClick = { isMultipleChoice = true },
+                    onClick = { 
+                        updateQuestion(currentQuestion.copy(isMultipleChoice = true))
+                    },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isMultipleChoice) 
+                        containerColor = if (currentQuestion.isMultipleChoice) 
                             MaterialTheme.colorScheme.primary 
                         else 
                             MaterialTheme.colorScheme.secondary
@@ -91,9 +123,11 @@ fun CreateQuizSlideScreen(navController: NavController) {
                     Text("Trắc Nghiệm")
                 }
                 Button(
-                    onClick = { isMultipleChoice = false },
+                    onClick = { 
+                        updateQuestion(currentQuestion.copy(isMultipleChoice = false))
+                    },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (!isMultipleChoice) 
+                        containerColor = if (!currentQuestion.isMultipleChoice) 
                             MaterialTheme.colorScheme.primary 
                         else 
                             MaterialTheme.colorScheme.secondary
@@ -140,8 +174,10 @@ fun CreateQuizSlideScreen(navController: NavController) {
 
             // Question Input
             OutlinedTextField(
-                value = question,
-                onValueChange = { question = it },
+                value = currentQuestion.question,
+                onValueChange = { 
+                    updateQuestion(currentQuestion.copy(question = it))
+                },
                 label = { Text("Câu Hỏi") },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 2
@@ -150,7 +186,6 @@ fun CreateQuizSlideScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(16.dp))
 
             // Time Input
-            var timeInSeconds by remember { mutableStateOf("30") }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -164,18 +199,18 @@ fun CreateQuizSlideScreen(navController: NavController) {
                     modifier = Modifier.weight(1f)
                 )
                 OutlinedTextField(
-                    value = timeInSeconds,
+                    value = currentQuestion.timeLimit.toString(),
                     onValueChange = { 
-                        // Only allow numbers and limit to reasonable values
                         val newValue = it.filter { char -> char.isDigit() }
                         if (newValue.isEmpty()) {
-                            timeInSeconds = "0"
+                            updateQuestion(currentQuestion.copy(timeLimit = 0))
                         } else {
                             val seconds = newValue.toIntOrNull() ?: 0
-                            timeInSeconds = when {
-                                seconds > 300 -> "300" // Max 5 minutes
-                                else -> seconds.toString()
+                            val timeLimit = when {
+                                seconds > 300 -> 300 // Max 5 minutes
+                                else -> seconds
                             }
+                            updateQuestion(currentQuestion.copy(timeLimit = timeLimit))
                         }
                     },
                     label = { Text("Giây") },
@@ -196,14 +231,9 @@ fun CreateQuizSlideScreen(navController: NavController) {
                 )
             }
 
-            if (isMultipleChoice) {
+            if (currentQuestion.isMultipleChoice) {
                 // Multiple Choice Options
-                listOf(
-                    "A" to optionA,
-                    "B" to optionB,
-                    "C" to optionC,
-                    "D" to optionD
-                ).forEach { (option, value) ->
+                currentQuestion.options.forEachIndexed { index, option ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -211,25 +241,20 @@ fun CreateQuizSlideScreen(navController: NavController) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         RadioButton(
-                            selected = correctOption == option,
-                            onClick = { correctOption = option }
+                            selected = currentQuestion.correctAnswer == option,
+                            onClick = { 
+                                updateQuestion(currentQuestion.copy(correctAnswer = option))
+                            }
                         )
                         OutlinedTextField(
-                            value = when (option) {
-                                "A" -> optionA
-                                "B" -> optionB
-                                "C" -> optionC
-                                else -> optionD
-                            },
-                            onValueChange = {
-                                when (option) {
-                                    "A" -> optionA = it
-                                    "B" -> optionB = it
-                                    "C" -> optionC = it
-                                    else -> optionD = it
+                            value = option,
+                            onValueChange = { newValue ->
+                                val newOptions = currentQuestion.options.toMutableList().apply {
+                                    set(index, newValue)
                                 }
+                                updateQuestion(currentQuestion.copy(options = newOptions))
                             },
-                            label = { Text("Đáp Án $option") },
+                            label = { Text("Đáp Án ${('A' + index)}") },
                             modifier = Modifier
                                 .weight(1f)
                                 .padding(start = 8.dp)
@@ -239,67 +264,23 @@ fun CreateQuizSlideScreen(navController: NavController) {
             } else {
                 // Text Answer Input
                 OutlinedTextField(
-                    value = correctAnswer,
-                    onValueChange = { correctAnswer = it },
+                    value = currentQuestion.correctAnswer,
+                    onValueChange = { 
+                        updateQuestion(currentQuestion.copy(correctAnswer = it))
+                    },
                     label = { Text("Đáp Án Đúng (Bắt Buộc)") },
                     modifier = Modifier.fillMaxWidth()
                 )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Additional Answers
-                additionalAnswers.forEachIndexed { index, answer ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        OutlinedTextField(
-                            value = answer,
-                            onValueChange = { newValue ->
-                                additionalAnswers = additionalAnswers.toMutableList().apply {
-                                    set(index, newValue)
-                                }
-                            },
-                            label = { Text("Đáp Án Thay Thế ${index + 1}") },
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(end = 8.dp)
-                        )
-                        IconButton(
-                            onClick = {
-                                additionalAnswers = additionalAnswers.toMutableList().apply {
-                                    removeAt(index)
-                                }
-                            }
-                        ) {
-                            Icon(Icons.Default.Close, "Xóa Đáp Án")
-                        }
-                    }
-                }
-
-                // Add Answer Button
-                if (additionalAnswers.size < 3) {
-                    TextButton(
-                        onClick = {
-                            additionalAnswers = additionalAnswers + ""
-                        },
-                        modifier = Modifier.align(Alignment.Start)
-                    ) {
-                        Icon(Icons.Default.Add, "Thêm Đáp Án")
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Thêm Đáp Án Thay Thế")
-                    }
-                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // Fun Fact Input
             OutlinedTextField(
-                value = funFact,
-                onValueChange = { funFact = it },
+                value = currentQuestion.funFact,
+                onValueChange = { 
+                    updateQuestion(currentQuestion.copy(funFact = it))
+                },
                 label = { Text("Thông Tin Thêm (Tùy Chọn)") },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 2
@@ -315,83 +296,150 @@ fun CreateQuizSlideScreen(navController: NavController) {
                 .padding(vertical = 16.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .padding(16.dp)
             ) {
-                // Info Screen Button
-                Button(
-                    onClick = { 
+                // Slides Row
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                    // Home Button
+                    Card(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clickable { 
                         navController.navigateUp()
                     },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
+                        colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.secondary
                     )
-                ) {
-                    Text(
-                        text = "Thông Tin",
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                // Add Question Button
-                Button(
-                    onClick = {
-                        // TODO: Save current slide and reset form
-                        question = ""
-                        funFact = ""
-                        if (isMultipleChoice) {
-                            optionA = ""
-                            optionB = ""
-                            optionC = ""
-                            optionD = ""
-                            correctOption = null
-                        } else {
-                            correctAnswer = ""
-                            additionalAnswers = listOf()
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Home,
+                                contentDescription = "Quay lại",
+                                tint = Color.White
+                            )
                         }
-                    },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
+                    }
+
+                    // Question Slides
+                    questions.forEach { question ->
+                        Card(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clickable { 
+                                    currentSlide = question.id
+                                },
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (question.id == currentSlide)
+                                    MaterialTheme.colorScheme.primary
+                                else
+                                    MaterialTheme.colorScheme.secondary
+                            )
+                        ) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Thêm Câu Hỏi",
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center
+                                    text = question.id.toString(),
+                                    color = Color.White,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                            }
+                        }
+                    }
+
+                    // Add Question Button
+                    Card(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clickable { 
+                                val newQuestion = QuizQuestion(questions.size + 1)
+                                questions = questions + newQuestion
+                                currentSlide = newQuestion.id
+                            },
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.tertiary
+                    )
+                ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Thêm câu hỏi",
+                                tint = Color.White
                     )
                 }
+                    }
 
-                Spacer(modifier = Modifier.width(8.dp))
-
-                // Finish Quiz Button
-                Button(
-                    onClick = { 
+                    // Finish Button
+                    Card(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clickable {
+                                scope.launch {
+                                    try {
+                                        questions.forEach { question ->
+                                            if (question.question.isNotBlank() && question.correctAnswer.isNotBlank()) {
+                                                questionRepository.createQuestion(
+                                                    examId = examId,
+                                                    question = question.question,
+                                                    options = if (question.isMultipleChoice) question.options else listOf(question.correctAnswer),
+                                                    correctAnswer = question.correctAnswer,
+                                                    timeLimit = question.timeLimit
+                                                )
+                                            }
+                                        }
                         navController.navigate(Screen.GameLobby.route) {
                             popUpTo(Screen.GameLobby.route) {
                                 inclusive = false
                             }
                         }
-                    },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.tertiary
+                                    } catch (e: Exception) {
+                                        snackbarHostState.showSnackbar(
+                                            message = "Lỗi khi lưu câu hỏi: ${e.message}",
+                                            duration = SnackbarDuration.Short
+                                        )
+                                    }
+                                }
+                            },
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    Text(
-                        text = "Hoàn Thành",
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center
-                    )
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = "Hoàn thành",
+                                tint = Color.White
+                            )
+                        }
+                    }
                 }
             }
         }
+    }
+
+    // Add SnackbarHost to show messages
+    Box(modifier = Modifier.fillMaxSize()) {
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
 } 
