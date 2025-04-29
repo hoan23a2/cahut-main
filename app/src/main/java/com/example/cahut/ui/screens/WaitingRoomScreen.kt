@@ -48,7 +48,7 @@ import android.util.Log
 
 @Composable
 fun WaitingRoomScreen(
-    navController: NavController, 
+    navController: NavController,
     roomId: String,
     examId: String,
     isHost: Boolean
@@ -60,23 +60,41 @@ fun WaitingRoomScreen(
     val players by socketService.players.collectAsState()
     val isCreator by socketService.isCreator.collectAsState()
     val gameStarted by socketService.gameStarted.collectAsState()
+    val roomDeleted by socketService.roomDeleted.collectAsState()
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    
+
+    fun showToast(message: String) {
+        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+    }
+
+
+
     LaunchedEffect(Unit) {
         Log.d("WaitingRoomScreen", "Connecting to room: $roomId")
         socketService.connect(roomId)
     }
-    
+
     DisposableEffect(Unit) {
         onDispose {
             socketService.disconnect()
         }
     }
-    
+
     LaunchedEffect(gameStarted) {
         if (gameStarted) {
-            navController.navigate(Screen.PlayQuiz.route)
+            navController.navigate(Screen.PlayQuiz.createRoute(roomId, isHost))
+        }
+    }
+
+    LaunchedEffect(roomDeleted) {
+        if(roomDeleted){
+            scope.launch {
+                showToast("Phòng đã bị xóa bởi chủ phòng")
+                navController.navigate(Screen.GameLobby.route) {
+                    popUpTo(Screen.WaitingRoom.route) { inclusive = true }
+                }
+            }
         }
     }
 
@@ -268,9 +286,9 @@ fun WaitingRoomScreen(
                                 fontSize = 16.sp
                             )
                         }
-                        
+
                         Button(
-                            onClick = { 
+                            onClick = {
                                 socketService.deleteRoom(roomId)
                                 navController.navigate(Screen.GameLobby.route)
                             },
@@ -306,9 +324,9 @@ fun WaitingRoomScreen(
                                 textAlign = TextAlign.Center
                             )
                         }
-                        
+
                         Button(
-                            onClick = { 
+                            onClick = {
                                 socketService.leaveRoom(roomId)
                                 navController.navigate(Screen.GameLobby.route)
                             },
@@ -409,13 +427,13 @@ private fun generateQRCode(content: String): ImageBitmap? {
         val width = bitMatrix.width
         val height = bitMatrix.height
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        
+
         for (x in 0 until width) {
             for (y in 0 until height) {
                 bitmap.setPixel(x, y, if (bitMatrix.get(x, y)) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
             }
         }
-        
+
         bitmap.asImageBitmap()
     } catch (e: Exception) {
         e.printStackTrace()
@@ -433,4 +451,4 @@ fun WaitingRoomScreenPreview() {
     GameLobbyTheme {
         WaitingRoomScreen(rememberNavController(), "123456", "", false)
     }
-} 
+}

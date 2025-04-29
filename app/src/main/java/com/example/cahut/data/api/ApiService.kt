@@ -4,6 +4,7 @@ import com.example.cahut.data.model.Exam
 import com.example.cahut.data.model.Question
 import com.example.cahut.data.model.Room
 import com.example.cahut.data.model.CreateRoomResponse
+import com.example.cahut.data.model.JoinRoomResponse
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -99,7 +100,7 @@ interface ApiService {
     suspend fun joinRoom(
         @Header("Authorization") token: String,
         @Body request: JoinRoomRequest
-    ): Response<Room>
+    ): Response<JoinRoomResponse>
 }
 
 data class CreateExamRequest(

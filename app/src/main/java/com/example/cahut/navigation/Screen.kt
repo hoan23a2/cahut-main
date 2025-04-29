@@ -10,7 +10,9 @@ sealed class Screen(val route: String) {
     object WaitingRoom : Screen("waiting_room/{roomId}/{examId}/{isHost}") {
         fun createRoute(roomId: String, examId: String, isHost: Boolean) = "waiting_room/$roomId/$examId/$isHost"
     }
-    object PlayQuiz : Screen("play_quiz")
+    object PlayQuiz : Screen("play_quiz/{roomId}/{isHost}") {
+        fun createRoute(roomId: String, isHost: Boolean) = "play_quiz/$roomId/$isHost"
+    }
     object QuizScore : Screen("quiz_score")
     object QuizResult : Screen("quiz_result")
     object EditQuestions : Screen("edit_questions/{examId}/{examName}") {

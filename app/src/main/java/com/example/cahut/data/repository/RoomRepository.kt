@@ -41,8 +41,7 @@ class RoomRepository(private val context: Context) {
         
         val logMessage = "Creating room with examId: $examId"
         Log.d("RoomRepository", logMessage)
-        showToast(logMessage)
-        
+
         val response = apiService.createRoom("Bearer $token", request)
         
         if (!response.isSuccessful) {
@@ -62,7 +61,7 @@ class RoomRepository(private val context: Context) {
         }
 
         Log.d("RoomRepository", "Room created: ${createResponse.room}")
-        showToast("Room created with ID: ${createResponse.roomId}")
+//        showToast("Room created with ID: ${createResponse.roomId}")
         
         return createResponse.room
     }
@@ -85,17 +84,17 @@ class RoomRepository(private val context: Context) {
             throw Exception(errorBody ?: "Failed to join room")
         }
         
-        val room = response.body()
-        if (room == null) {
+        val joinResponse = response.body()
+        if (joinResponse == null) {
             val nullMessage = "Empty response body"
             Log.e("RoomRepository", nullMessage)
             showToast(nullMessage)
             throw Exception(nullMessage)
         }
-        
-        Log.d("RoomRepository", "Successfully joined room: $room")
-        showToast("Successfully joined room")
-        
-        return room
+
+        Log.d("RoomRepository", "Successfully joined room: ${joinResponse.room}")
+//        showToast("Successfully joined room")
+
+        return joinResponse.room
     }
 } 

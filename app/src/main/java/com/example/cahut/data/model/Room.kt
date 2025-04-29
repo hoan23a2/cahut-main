@@ -13,6 +13,12 @@ data class CreateRoomResponse(
     val room: Room
 )
 
+data class JoinRoomResponse(
+    val message: String,
+    val roomId: String,
+    val room: Room
+)
+
 data class Room(
     @SerializedName("_id")
     val id: String? = null,

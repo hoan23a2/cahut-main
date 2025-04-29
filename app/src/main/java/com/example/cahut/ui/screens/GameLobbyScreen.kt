@@ -198,7 +198,7 @@ fun GameLobbyScreen(navController: NavController) {
                                 textAlign = TextAlign.Center
                             )
                         }
-                        Spacer(modifier = Modifier.width(16.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
                         OutlinedTextField(
                             value = gameRoomId,
                             onValueChange = { 
@@ -253,7 +253,7 @@ fun GameLobbyScreen(navController: NavController) {
                                 }
                             },
                             modifier = Modifier
-                                .padding(start = 8.dp)
+                                .padding(start = 4.dp)
                                 .height(50.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color(0xFF00B074)
@@ -261,9 +261,9 @@ fun GameLobbyScreen(navController: NavController) {
                             shape = RoundedCornerShape(24.dp)
                         ) {
                             Text(
-                                text = "Tham gia",
+                                text = "Join",
                                 color = Color.White,
-                                fontSize = 15.sp
+                                fontSize = 14.sp
                             )
                         }
                     }
