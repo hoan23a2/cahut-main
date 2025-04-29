@@ -27,12 +27,33 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.example.cahut.data.repository.ExamRepository
+import kotlinx.coroutines.launch
 
 @Composable
 fun CreateQuizInfoScreen(navController: NavController) {
     var quizName by remember { mutableStateOf("") }
     var quizDescription by remember { mutableStateOf("") }
-    // TODO: Add image handling state
+    val context = LocalContext.current
+    val examRepository = remember { ExamRepository(context) }
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+    var existingExams by remember { mutableStateOf<List<String>>(emptyList()) }
+
+    // Load existing exam names
+    LaunchedEffect(Unit) {
+        try {
+            val exams = examRepository.getExams()
+            existingExams = exams.map { it.examName }
+        } catch (e: Exception) {
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    message = "Lỗi khi tải danh sách đề: ${e.message}",
+                    duration = SnackbarDuration.Short
+                )
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -41,7 +62,6 @@ fun CreateQuizInfoScreen(navController: NavController) {
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
         // Image Selection Card
         Card(
             modifier = Modifier
@@ -152,7 +172,7 @@ fun CreateQuizInfoScreen(navController: NavController) {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top =19.dp),
+                            .padding(top = 19.dp),
                         shape = RoundedCornerShape(8.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = Color(0xFF00AFC6)
@@ -193,8 +213,46 @@ fun CreateQuizInfoScreen(navController: NavController) {
         // Next Button
         Button(
             onClick = { 
-                // TODO: Save quiz info and navigate to slide creation
-                navController.navigate(Screen.CreateQuizSlide.route)
+                scope.launch {
+                    try {
+                        val trimmedQuizName = quizName.trim()
+                        if (trimmedQuizName.isBlank()) {
+                            snackbarHostState.showSnackbar(
+                                message = "Vui lòng nhập tên đề",
+                                duration = SnackbarDuration.Short
+                            )
+                            return@launch
+                        }
+                        if (existingExams.any { it.equals(trimmedQuizName, ignoreCase = true) }) {
+                            snackbarHostState.showSnackbar(
+                                message = "Tên đề đã tồn tại, vui lòng chọn tên khác",
+                                duration = SnackbarDuration.Short
+                            )
+                            return@launch
+                        }
+                        // Gọi createExam để quiz có trên server
+                        examRepository.createExam(trimmedQuizName)
+                        // Lấy lại danh sách exam để có examId mới nhất
+                        val exams = examRepository.getExams()
+                        val newExam = exams.find { it.examName == trimmedQuizName }
+                        
+                        if (newExam == null || newExam._id.isBlank()) {
+                            snackbarHostState.showSnackbar(
+                                message = "Không thể lấy ID của đề mới",
+                                duration = SnackbarDuration.Short
+                            )
+                            return@launch
+                        }
+                        
+                        // Truyền _id (examId) sang màn tiếp theo
+                        navController.navigate(Screen.CreateQuizSlide.createRoute(newExam._id))
+                    } catch (e: Exception) {
+                        snackbarHostState.showSnackbar(
+                            message = "Lỗi khi tạo đề: ${e.message}",
+                            duration = SnackbarDuration.Short
+                        )
+                    }
+                }
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -205,6 +263,14 @@ fun CreateQuizInfoScreen(navController: NavController) {
         ) {
             Text("Thêm câu hỏi")
         }
+    }
+
+    // Add SnackbarHost to show messages
+    Box(modifier = Modifier.fillMaxSize()) {
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
 }
 
