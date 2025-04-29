@@ -212,27 +212,8 @@ fun GameLobbyScreen(navController: NavController) {
                                     if (it.length == 6) {
                                         scope.launch {
                                             try {
-                                                Log.d("GameLobbyScreen", "Joining room with PIN: $it")
-                                                val room = roomRepository.joinRoom(it)
-                                                Log.d("GameLobbyScreen", "Joined room with examId: ${room.examId}")
-                                                if (room.examId == null || room.examId.isBlank()) {
-                                                    isPinError = true
-                                                    snackbarHostState.showSnackbar(
-                                                        message = "Phòng không có đề thi, vui lòng thử lại!",
-                                                        duration = SnackbarDuration.Short
-                                                    )
-                                                    return@launch
-                                                }
-                                                // Kiểm tra examId có tồn tại trong danh sách exam không
-                                                val examExists = exams.any { exam -> exam._id == room.examId }
-                                                if (!examExists) {
-                                                    isPinError = true
-                                                    snackbarHostState.showSnackbar(
-                                                        message = "Đề thi không tồn tại, vui lòng thử lại!",
-                                                        duration = SnackbarDuration.Short
-                                                    )
-                                                    return@launch
-                                                }
+                                                Log.d("GameLobbyScreen", "Joining room with PIN: $gameRoomId")
+                                                val room = roomRepository.joinRoom(gameRoomId)
                                                 navController.navigate(Screen.WaitingRoom.createRoute(
                                                     roomId = room.roomId,
                                                     examId = room.examId,
@@ -277,38 +258,6 @@ fun GameLobbyScreen(navController: NavController) {
                                 keyboardType = KeyboardType.Number
                             )
                         )
-                        Button(
-                            onClick = {
-                                scope.launch {
-                                    try {
-                                        val room = roomRepository.joinRoom(gameRoomId)
-                                        navController.navigate(Screen.WaitingRoom.createRoute(
-                                            roomId = room.roomId,
-                                            examId = room.examId,
-                                            isHost = false
-                                        ))
-                                    } catch (e: Exception) {
-                                        snackbarHostState.showSnackbar(
-                                            message = "Lỗi khi tham gia phòng: ${e.message}",
-                                            duration = SnackbarDuration.Short
-                                        )
-                                    }
-                                }
-                            },
-                            modifier = Modifier
-                                .padding(start = 4.dp)
-                                .height(50.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF00B074)
-                            ),
-                            shape = RoundedCornerShape(24.dp)
-                        ) {
-                            Text(
-                                text = "Join",
-                                color = Color.White,
-                                fontSize = 14.sp
-                            )
-                        }
                     }
                 }
             }
