@@ -45,7 +45,9 @@ class SocketService(private val context: Context) {
         data class ShowResults(
             val question: String,
             val options: List<String>,
-            val correctAnswer: String
+            val correctAnswer: String,
+            val type: String?,
+            val imageUrl: String?
         ) : QuizEvent()
         data class ShowScores(val leaderboard: List<LeaderboardEntry>) : QuizEvent()
         data class GameEnded(val leaderboard: List<LeaderboardEntry>) : QuizEvent()
@@ -129,7 +131,9 @@ class SocketService(private val context: Context) {
                         options = (0 until questionObj.getJSONArray("options").length())
                             .map { questionObj.getJSONArray("options").getString(it) },
                         correctAnswer = questionObj.getString("correctAnswer"),
-                        timeLimit = questionObj.getInt("timeLimit")
+                        timeLimit = questionObj.getInt("timeLimit"),
+                        type = if (questionObj.has("type")) questionObj.getString("type") else "normal",
+                        imageUrl = if (questionObj.has("imageUrl")) questionObj.getString("imageUrl") else null
                     )
                     _quizEvents.value = QuizEvent.NextQuestion(
                         question = question,
@@ -149,7 +153,9 @@ class SocketService(private val context: Context) {
                         question = data.getString("question"),
                         options = (0 until data.getJSONArray("options").length())
                             .map { data.getJSONArray("options").getString(it) },
-                        correctAnswer = data.getString("correctAnswer")
+                        correctAnswer = data.getString("correctAnswer"),
+                        type = if (data.has("type")) data.getString("type") else null,
+                        imageUrl = if (data.has("imageUrl")) data.getString("imageUrl") else null
                     )
                 } catch (e: Exception) {
                     Log.e("SocketService", "Error processing show-results: ${e.message}")

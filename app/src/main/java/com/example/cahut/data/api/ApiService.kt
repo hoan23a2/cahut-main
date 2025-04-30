@@ -7,6 +7,8 @@ import com.example.cahut.data.model.CreateRoomResponse
 import com.example.cahut.data.model.JoinRoomResponse
 import retrofit2.Response
 import retrofit2.http.*
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 
 data class LoginRequest(
     val email: String,
@@ -71,17 +73,31 @@ interface ApiService {
         @Path("examId") examId: String
     ): Response<List<Question>>
 
+    @Multipart
     @POST("api/question/create")
-    suspend fun createQuestion(
+    suspend fun createQuestionWithImage(
         @Header("Authorization") token: String,
-        @Body request: CreateQuestionRequest
+        @Part("examId") examId: RequestBody,
+        @Part("question") question: RequestBody,
+        @Part("options") options: RequestBody,
+        @Part("correctAnswer") correctAnswer: RequestBody,
+        @Part("timeLimit") timeLimit: RequestBody,
+        @Part("type") type: RequestBody,
+        @Part image: MultipartBody.Part?
     ): Response<Question>
 
+    @Multipart
     @PUT("api/question/edit/{questionId}")
-    suspend fun editQuestion(
+    suspend fun editQuestionWithImage(
         @Header("Authorization") token: String,
         @Path("questionId") questionId: String,
-        @Body request: EditQuestionRequest
+        @Part("examId") examId: RequestBody,
+        @Part("question") question: RequestBody,
+        @Part("options") options: RequestBody,
+        @Part("correctAnswer") correctAnswer: RequestBody,
+        @Part("timeLimit") timeLimit: RequestBody,
+        @Part("type") type: RequestBody,
+        @Part image: MultipartBody.Part?
     ): Response<Question>
 
     @DELETE("api/question/delete/{questionId}")
@@ -116,7 +132,8 @@ data class CreateQuestionRequest(
     val question: String,
     val options: List<String>,
     val correctAnswer: String,
-    val timeLimit: Int
+    val timeLimit: Int,
+    val type: String = "normal"
 )
 
 data class EditQuestionRequest(
@@ -124,5 +141,6 @@ data class EditQuestionRequest(
     val question: String,
     val options: List<String>,
     val correctAnswer: String,
-    val timeLimit: Int
+    val timeLimit: Int,
+    val type: String = "normal"
 ) 

@@ -9,5 +9,7 @@ data class Question(
     val options: List<String>,
     val correctAnswer: String,
     val timeLimit: Int,
-    val examId: String? = null
+    val examId: String? = null,
+    val type: String = "normal",
+    val imageUrl: String? = null
 ) 

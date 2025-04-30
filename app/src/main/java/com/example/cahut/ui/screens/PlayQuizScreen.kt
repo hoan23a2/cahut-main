@@ -32,6 +32,9 @@ import com.example.cahut.navigation.Screen
 import kotlinx.coroutines.delay
 import java.util.concurrent.TimeUnit
 import com.example.cahut.util.JwtUtils
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.rememberAsyncImagePainter
+import androidx.compose.foundation.Image
 
 @Composable
 fun PlayQuizScreen(
@@ -117,9 +120,11 @@ fun PlayQuizScreen(
                 }
                 is SocketService.QuizEvent.ShowResults -> {
                     showResults = QuizResult(
-                        event.question,
-                        event.options,
-                        event.correctAnswer
+                        question = event.question,
+                        options = event.options,
+                        correctAnswer = event.correctAnswer,
+                        type = event.type ?: "normal",
+                        imageUrl = event.imageUrl
                     )
                     question = null
                     countdown = null
@@ -214,87 +219,119 @@ fun PlayQuizScreen(
             }
             question != null -> {
                 Column(
-                modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-        Text(
-                        question!!.question,
-                        color = Color.White,
-                        fontSize = 20.sp,
-            textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(bottom = 16.dp)
-        )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            question!!.question,
+                            color = Color.White,
+                            fontSize = 20.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
 
-                    Text(
-                        "⏳ Thời gian còn lại: $timeLeft giây",
-                        color = Color.White,
-                        fontSize = 16.sp,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
+                        Text(
+                            "⏳ Thời gian còn lại: $timeLeft giây",
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
 
-                    question!!.options.forEachIndexed { index, option ->
-                        val optionLetter = ('A' + index).toString()
-                        val isSelected = selectedAnswer == option
-                        val isDisabled = selectedAnswer != null
-
-                        Card(
-                            onClick = {
-                                if (selectedAnswer == null) {
-                                    selectedAnswer = option
-                                    socketService.submitAnswer(roomId, option)
-                                }
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = when {
-                                    isSelected -> Color(0xFF00B074)
-                                    isDisabled -> Color(0xFF23616A)
-                                    else -> Color(0xFF23616A)
-                                }
-                            ),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Row(
+                        if (question!!.type == "image" && question!!.imageUrl != null) {
+                            Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "$optionLetter. ",
-                                    color = Color.White,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold
+                                    .padding(horizontal = 16.dp)
+                                    .padding(bottom = 16.dp)
+                                    .height(200.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = Color(0xFF23616A)
                                 )
-                                Text(
-                                    text = option,
-                                    color = Color.White,
-                                    fontSize = 16.sp,
-                                    modifier = Modifier.weight(1f)
+                            ) {
+                                Image(
+                                    painter = rememberAsyncImagePainter("http://10.0.2.2:5000${question!!.imageUrl}"),
+                                    contentDescription = "Question image",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Fit
                                 )
                             }
                         }
                     }
 
-                    if (isHost) {
-                        Button(
-                            onClick = { socketService.timeUp(roomId) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 16.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFFFA726)
-                            )
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Forward,
-                                contentDescription = "Bỏ qua",
-                                tint = Color.White
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Bỏ qua câu hỏi", color = Color.White)
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        question!!.options.forEachIndexed { index, option ->
+                            val optionLetter = ('A' + index).toString()
+                            val isSelected = selectedAnswer == option
+                            val isDisabled = selectedAnswer != null
+
+                            Card(
+                                onClick = {
+                                    if (selectedAnswer == null) {
+                                        selectedAnswer = option
+                                        socketService.submitAnswer(roomId, option)
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = when {
+                                        isSelected -> Color(0xFF00B074)
+                                        isDisabled -> Color(0xFF23616A)
+                                        else -> Color(0xFF23616A)
+                                    }
+                                ),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "$optionLetter. ",
+                                        color = Color.White,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = option,
+                                        color = Color.White,
+                                        fontSize = 16.sp,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+                        }
+
+                        if (isHost) {
+                            Button(
+                                onClick = { socketService.timeUp(roomId) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 16.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFFFA726)
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Forward,
+                                    contentDescription = "Bỏ qua",
+                                    tint = Color.White
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Bỏ qua câu hỏi", color = Color.White)
+                            }
                         }
                     }
                 }
@@ -304,46 +341,78 @@ fun PlayQuizScreen(
                     modifier = Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        showResults!!.question,
-                        color = Color.White,
-                        fontSize = 20.sp,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            showResults!!.question,
+                            color = Color.White,
+                            fontSize = 20.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
 
-                    showResults!!.options.forEachIndexed { index, option ->
-                        val optionLetter = ('A' + index).toString()
-                        val isCorrect = option == showResults!!.correctAnswer
-                        val isUserAnswer = option == selectedAnswer
-
-        Button(
-                            onClick = {},
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = when {
-                                    isCorrect -> Color(0xFF28A745)
-                                    isUserAnswer && !isCorrect -> Color(0xFFDC3545)
-                                    else -> Color(0xFF23616A)
-                                }
-                            ),
-                            enabled = false
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Start
-                            ) {
-                                Text(
-                                    "$optionLetter. $option",
-                                    color = Color.White
+                        if (showResults!!.type == "image" && showResults!!.imageUrl != null) {
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp)
+                                    .padding(bottom = 16.dp)
+                                    .height(200.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = Color(0xFF23616A)
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                if (isCorrect) {
-                                    Text("✓", color = Color.White)
-                                } else if (isUserAnswer && !isCorrect) {
-                                    Text("✗", color = Color.White)
+                            ) {
+                                Image(
+                                    painter = rememberAsyncImagePainter("http://10.0.2.2:5000${showResults!!.imageUrl}"),
+                                    contentDescription = "Question image",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Fit
+                                )
+                            }
+                        }
+                    }
+
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        showResults!!.options.forEachIndexed { index, option ->
+                            val optionLetter = ('A' + index).toString()
+                            val isCorrect = option == showResults!!.correctAnswer
+                            val isUserAnswer = option == selectedAnswer
+
+                            Button(
+                                onClick = {},
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = when {
+                                        isCorrect -> Color(0xFF28A745)
+                                        isUserAnswer && !isCorrect -> Color(0xFFDC3545)
+                                        else -> Color(0xFF23616A)
+                                    }
+                                ),
+                                enabled = false
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Start
+                                ) {
+                                    Text(
+                                        "$optionLetter. $option",
+                                        color = Color.White
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    if (isCorrect) {
+                                        Text("✓", color = Color.White)
+                                    } else if (isUserAnswer && !isCorrect) {
+                                        Text("✗", color = Color.White)
+                                    }
                                 }
                             }
                         }
