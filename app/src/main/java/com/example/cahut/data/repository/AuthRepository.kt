@@ -27,7 +27,7 @@ class AuthRepository(context: Context) {
             .build()
             
         Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:5000/") // Use 10.0.2.2 for Android emulator to access localhost
+            .baseUrl("https://cahut.onrender.com/")
             .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
