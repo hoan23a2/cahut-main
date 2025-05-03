@@ -119,7 +119,7 @@ fun EditQuestionsScreen(
                         newCorrectAnswer = question.correctAnswer
                         newTimeLimit = question.timeLimit
                         newType = question.type
-                        selectedImageUri = question.imageUrl?.let { Uri.parse("http://10.0.2.2:5000$it") }
+                        selectedImageUri = question.imageUrl?.let { Uri.parse("https://cahut.onrender.com$it") }
                         isNewImageSelected = false
                         showEditQuestionDialog = true
                     },
@@ -481,7 +481,7 @@ fun QuestionItem(
             
             if (question.type == "image" && question.imageUrl != null) {
                 Image(
-                    painter = rememberAsyncImagePainter("http://10.0.2.2:5000${question.imageUrl}"),
+                    painter = rememberAsyncImagePainter("https://cahut.onrender.com${question.imageUrl}"),
                     contentDescription = "Question image",
                     modifier = Modifier
                         .fillMaxWidth()

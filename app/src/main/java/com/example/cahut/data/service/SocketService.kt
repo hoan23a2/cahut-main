@@ -61,7 +61,7 @@ class SocketService(private val context: Context) {
             val options = IO.Options().apply {
                 query = "token=$token"
             }
-            socket = IO.socket("http://10.0.2.2:5000", options)
+            socket = IO.socket("https://cahut.onrender.com", options)
             
             socket?.on(Socket.EVENT_CONNECT) { _ ->
                 Log.d("SocketService", "Socket connected")

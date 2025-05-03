@@ -255,7 +255,7 @@ fun PlayQuizScreen(
                                 )
                             ) {
                                 Image(
-                                    painter = rememberAsyncImagePainter("http://10.0.2.2:5000${question!!.imageUrl}"),
+                                    painter = rememberAsyncImagePainter("https://cahut.onrender.com${question!!.imageUrl}"),
                                     contentDescription = "Question image",
                                     modifier = Modifier.fillMaxSize(),
                                     contentScale = ContentScale.Fit
@@ -367,7 +367,7 @@ fun PlayQuizScreen(
                                 )
                             ) {
                                 Image(
-                                    painter = rememberAsyncImagePainter("http://10.0.2.2:5000${showResults!!.imageUrl}"),
+                                    painter = rememberAsyncImagePainter("https://cahut.onrender.com${showResults!!.imageUrl}"),
                                     contentDescription = "Question image",
                                     modifier = Modifier.fillMaxSize(),
                                     contentScale = ContentScale.Fit
