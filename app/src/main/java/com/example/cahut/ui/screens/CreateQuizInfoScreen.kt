@@ -230,22 +230,17 @@ fun CreateQuizInfoScreen(navController: NavController) {
                             )
                             return@launch
                         }
-                        // Gọi createExam để quiz có trên server
-                        examRepository.createExam(trimmedQuizName)
-                        // Lấy lại danh sách exam để có examId mới nhất
-                        val exams = examRepository.getExams()
-                        val newExam = exams.find { it.examName == trimmedQuizName }
-                        
-                        if (newExam == null || newExam._id.isBlank()) {
+                        // Gọi createExam để quiz có trên server và lấy luôn object trả về
+                        val createdExam = examRepository.createExam(trimmedQuizName)
+                        if (createdExam == null || createdExam._id.isBlank()) {
                             snackbarHostState.showSnackbar(
                                 message = "Không thể lấy ID của đề mới",
                                 duration = SnackbarDuration.Short
                             )
                             return@launch
                         }
-                        
-                        // Truyền _id (examId) sang màn tiếp theo
-                        navController.navigate(Screen.CreateQuizSlide.createRoute(newExam._id))
+                        // Truyền _id (examId) và examName sang màn tiếp theo
+                        navController.navigate(Screen.CreateQuizSlide.createRoute(createdExam._id, createdExam.examName))
                     } catch (e: Exception) {
                         snackbarHostState.showSnackbar(
                             message = "Lỗi khi tạo đề: ${e.message}",

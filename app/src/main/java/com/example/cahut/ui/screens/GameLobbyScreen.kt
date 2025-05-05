@@ -340,7 +340,9 @@ fun GameLobbyScreen(navController: NavController) {
                     )
 
                     Button(
-                        onClick = { navController.navigate(Screen.CreateQuizInfo.route) },
+                        onClick = { 
+                            showCreateExamDialog = true
+                        },
                         modifier = Modifier
                             .width(160.dp)
                             .height(48.dp),
@@ -414,12 +416,12 @@ fun GameLobbyScreen(navController: NavController) {
     if (showCreateExamDialog) {
         AlertDialog(
             onDismissRequest = { showCreateExamDialog = false },
-            title = { Text("Tạo đề mới") },
+            title = { Text("Tạo Quiz mới") },
             text = {
                 OutlinedTextField(
                     value = newExamName,
                     onValueChange = { newExamName = it },
-                    label = { Text("Tên đề") },
+                    label = { Text("Tên Quiz") },
                     modifier = Modifier.fillMaxWidth()
                 )
             },
@@ -427,32 +429,48 @@ fun GameLobbyScreen(navController: NavController) {
                 Button(
                     onClick = {
                         scope.launch {
-                            try {
-                                examRepository.createExam(newExamName)
-                                exams = examRepository.getExams()
-                                showCreateExamDialog = false
-                                newExamName = ""
+                            if (newExamName.isBlank()) {
                                 snackbarHostState.showSnackbar(
-                                    message = "Tạo đề thành công!",
+                                    message = "Vui lòng nhập tên quiz!",
                                     duration = SnackbarDuration.Short
                                 )
+                                return@launch
+                            }
+                            try {
+                                examRepository.createExam(newExamName)
+                                val exams = examRepository.getExams()
+                                val newExam = exams.find { it.examName == newExamName }
+                                if (newExam == null || newExam._id.isNullOrBlank()) {
+                                    snackbarHostState.showSnackbar(
+                                        message = "Không thể lấy ID của quiz mới",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                    return@launch
+                                }
+                                showCreateExamDialog = false
+                                newExamName = ""
+                                navController.navigate(Screen.CreateQuizSlide.createRoute(newExam._id, newExam.examName))
                             } catch (e: Exception) {
                                 snackbarHostState.showSnackbar(
-                                    message = "Lỗi khi tạo đề: ${e.message}",
+                                    message = "Lỗi khi tạo quiz: ${e.message}",
                                     duration = SnackbarDuration.Short
                                 )
                             }
                         }
-                    }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF00AFC6)
+                    )
                 ) {
-                    Text("Tạo")
+                    Text("Tạo Quiz", color = Color.White)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showCreateExamDialog = false }) {
-                    Text("Hủy")
+                    Text("Hủy", color = Color(0xFF00AFC6))
                 }
-            }
+            },
+            containerColor = Color(0xFFCFFBFC)
         )
     }
 

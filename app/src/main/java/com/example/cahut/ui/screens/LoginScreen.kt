@@ -63,134 +63,145 @@ fun LoginScreen(navController: NavController) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(Color(0xFFf4f3ea))
     ) {
-        Column(
+        Box(
             modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.logo),
-                contentDescription = "Logo",
-                modifier = Modifier
-                    .height(120.dp)
-                    .padding(bottom = 32.dp)
-            )
-            
-            Text(
-                text = "Chào mừng trở lại",
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(bottom = 32.dp)
-            )
-
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text("Email", color = MaterialTheme.colorScheme.onSurface) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface,
-                    disabledContainerColor = MaterialTheme.colorScheme.surface
-                ),
-                shape = RoundedCornerShape(8.dp)
-            )
-
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Mật khẩu", color = MaterialTheme.colorScheme.onSurface) },
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface,
-                    disabledContainerColor = MaterialTheme.colorScheme.surface
-                ),
-                shape = RoundedCornerShape(8.dp)
-            )
-
-            TextButton(
-                onClick = { /* Handle forgot password */ },
-                modifier = Modifier.align(Alignment.End)
-            ) {
-                Text(
-                    text = "Quên mật khẩu?",
-                    color = MaterialTheme.colorScheme.onSurface
+                .fillMaxWidth(0.95f)
+                .fillMaxHeight(0.9f)
+                .align(Alignment.Center)
+                .background(
+                    MaterialTheme.colorScheme.background.copy(alpha = 0.7f),
+                    RoundedCornerShape(16.dp)
                 )
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Button(
-                onClick = {
-                    if (email.isNotEmpty() && password.isNotEmpty()) {
-                        viewModel.login(email, password)
-                    } else {
-                        Toast.makeText(context, "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show()
-                    }
-                },
+        ) {
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
-                    .shadow(
-                        elevation = 4.dp,
-                        shape = RoundedCornerShape(8.dp)
-                    ),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF33b98a),
-                    contentColor = Color.White
-                ),
-                shape = RoundedCornerShape(8.dp),
-                enabled = !loginState.isLoading
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                if (loginState.isLoading) {
-                    CircularProgressIndicator(
-                        color = Color.White,
-                        modifier = Modifier.size(24.dp)
-                    )
-                } else {
+                Image(
+                    painter = painterResource(id = R.drawable.logo),
+                    contentDescription = "Logo",
+                    modifier = Modifier
+                        .height(120.dp)
+                        .padding(bottom = 32.dp)
+                )
+                
+                Text(
+                    text = "Chào mừng trở lại",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(bottom = 32.dp)
+                )
+
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text("Email", color = MaterialTheme.colorScheme.onSurface) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurface,
+                        disabledContainerColor = MaterialTheme.colorScheme.surface
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                )
+
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text("Mật khẩu", color = MaterialTheme.colorScheme.onSurface) },
+                    visualTransformation = PasswordVisualTransformation(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurface,
+                        disabledContainerColor = MaterialTheme.colorScheme.surface
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                )
+
+                TextButton(
+                    onClick = { /* Handle forgot password */ },
+                    modifier = Modifier.align(Alignment.End)
+                ) {
                     Text(
-                        text = "Đăng nhập",
-                        color = Color.White,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp
-                        )
+                        text = "Quên mật khẩu?",
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "Chưa có tài khoản? ",
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                Text(
-                    text = "Tạo tài khoản",
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.clickable {
-                        navController.navigate(Screen.Register.route)
+                Button(
+                    onClick = {
+                        if (email.isNotEmpty() && password.isNotEmpty()) {
+                            viewModel.login(email, password)
+                        } else {
+                            Toast.makeText(context, "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .shadow(
+                            elevation = 4.dp,
+                            shape = RoundedCornerShape(8.dp)
+                        ),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF33b98a),
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    enabled = !loginState.isLoading
+                ) {
+                    if (loginState.isLoading) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    } else {
+                        Text(
+                            text = "Đăng nhập",
+                            color = Color.White,
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 20.sp
+                            )
+                        )
                     }
-                )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Chưa có tài khoản? ",
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Text(
+                        text = "Tạo tài khoản",
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.clickable {
+                            navController.navigate(Screen.Register.route)
+                        }
+                    )
+                }
             }
         }
     }
