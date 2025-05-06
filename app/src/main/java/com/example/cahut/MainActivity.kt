@@ -94,12 +94,17 @@ class MainActivity : ComponentActivity() {
                                 navArgument("isHost") {
                                     type = NavType.BoolType
                                     defaultValue = false
+                                },
+                                navArgument("totalPlayers") {
+                                    type = NavType.IntType
+                                    defaultValue = 0
                                 }
                             )
                         ) { backStackEntry ->
                             val roomId = backStackEntry.arguments?.getString("roomId") ?: ""
                             val isHost = backStackEntry.arguments?.getBoolean("isHost") ?: false
-                            PlayQuizScreen(navController, roomId, isHost)
+                            val totalPlayers = backStackEntry.arguments?.getInt("totalPlayers") ?: 0
+                            PlayQuizScreen(navController, roomId, isHost, totalPlayers)
                         }
                         composable(Screen.QuizScore.route) {
                             QuizScoreScreen(navController)

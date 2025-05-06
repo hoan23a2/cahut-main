@@ -83,7 +83,7 @@ fun WaitingRoomScreen(
 
     LaunchedEffect(gameStarted) {
         if (gameStarted) {
-            navController.navigate(Screen.PlayQuiz.createRoute(roomId, isHost))
+            navController.navigate(Screen.PlayQuiz.createRoute(roomId, isHost, players.size))
         }
     }
 

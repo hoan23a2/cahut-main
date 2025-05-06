@@ -44,6 +44,7 @@ import com.example.cahut.data.repository.RoomRepository
 import androidx.compose.material.icons.filled.Login
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.foundation.BorderStroke
 
 @Composable
 fun GameLobbyScreen(navController: NavController) {
@@ -367,11 +368,13 @@ fun GameLobbyScreen(navController: NavController) {
             // Exams List Section
             Text(
                 text = "Danh sách Quiz",
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold
+                ),
                 color = MaterialTheme.colorScheme.onBackground
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Exams List
             LazyColumn(
@@ -416,13 +419,25 @@ fun GameLobbyScreen(navController: NavController) {
     if (showCreateExamDialog) {
         AlertDialog(
             onDismissRequest = { showCreateExamDialog = false },
-            title = { Text("Tạo Quiz mới") },
+            title = { 
+                Text(
+                    "Tạo Quiz mới",
+                    color = Color(0xFF00AFC6)
+                ) 
+            },
             text = {
                 OutlinedTextField(
                     value = newExamName,
                     onValueChange = { newExamName = it },
                     label = { Text("Tên Quiz") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF00AFC6),
+                        unfocusedBorderColor = Color(0xFF00AFC6),
+                        focusedLabelColor = Color(0xFF00AFC6),
+                        unfocusedLabelColor = Color(0xFF00AFC6),
+                        cursorColor = Color(0xFF00AFC6)
+                    )
                 )
             },
             confirmButton = {
@@ -437,6 +452,15 @@ fun GameLobbyScreen(navController: NavController) {
                                 return@launch
                             }
                             try {
+                                // Kiểm tra tên quiz đã tồn tại chưa
+                                val existingExams = examRepository.getExams()
+                                if (existingExams.any { it.examName.equals(newExamName, ignoreCase = true) }) {
+                                    snackbarHostState.showSnackbar(
+                                        message = "Tên quiz này đã tồn tại!",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                    return@launch
+                                }
                                 examRepository.createExam(newExamName)
                                 val exams = examRepository.getExams()
                                 val newExam = exams.find { it.examName == newExamName }
@@ -526,12 +550,19 @@ fun GameLobbyScreen(navController: NavController) {
     if (showCreateRoomDialog) {
         AlertDialog(
             onDismissRequest = { showCreateRoomDialog = false },
-            title = { Text("Tạo phòng mới") },
+            title = { 
+                Text(
+                    "Tạo phòng mới",
+                    color = Color(0xFF00B074)
+                ) 
+            },
             text = {
                 Column {
                     Text(
                         text = "Chọn đề thi:",
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            color = Color(0xFF00B074)
+                        ),
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     Column {
@@ -567,13 +598,19 @@ fun GameLobbyScreen(navController: NavController) {
                                     },
                                 colors = CardDefaults.cardColors(
                                     containerColor = if (selectedExam?._id == exam._id) 
-                                        Color(0xFF00B074) else MaterialTheme.colorScheme.background
+                                        Color(0xFF00B074) else Color.White
                                 ),
-                                shape = RoundedCornerShape(8.dp)
+                                shape = RoundedCornerShape(8.dp),
+                                border = BorderStroke(
+                                    width = 2.dp,
+                                    color = if (selectedExam?._id == exam._id) 
+                                        Color(0xFF00B074) else Color(0xFF00B074)
+                                )
                             ) {
                                 Text(
                                     text = exam.examName,
-                                    color = if (selectedExam?._id == exam._id) Color.White else MaterialTheme.colorScheme.onBackground,
+                                    color = if (selectedExam?._id == exam._id) 
+                                        Color.White else MaterialTheme.colorScheme.onBackground,
                                     modifier = Modifier.padding(16.dp)
                                 )
                             }
@@ -584,9 +621,10 @@ fun GameLobbyScreen(navController: NavController) {
             confirmButton = {},
             dismissButton = {
                 TextButton(onClick = { showCreateRoomDialog = false }) {
-                    Text("Hủy")
+                    Text("Hủy", color = Color(0xFF00B074))
                 }
-            }
+            },
+            containerColor = Color(0xFFd1fccf)
         )
     }
 
@@ -608,37 +646,58 @@ fun ExamItem(
     onAddQuestionClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFFFC679)
+        )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .fillMaxHeight()
+                .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = exam.examName,
-                style = MaterialTheme.typography.bodyLarge
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = Color.Gray
             )
             Row {
-                IconButton(onClick = onAddQuestionClick) {
+                IconButton(
+                    onClick = onAddQuestionClick,
+                    modifier = Modifier.size(32.dp)
+                ) {
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = "Thêm câu hỏi"
+                        contentDescription = "Thêm câu hỏi",
+                        tint = Color.Gray
                     )
                 }
-                IconButton(onClick = onEditClick) {
+                IconButton(
+                    onClick = onEditClick,
+                    modifier = Modifier.size(32.dp)
+                ) {
                     Icon(
                         imageVector = Icons.Default.Edit,
-                        contentDescription = "Sửa"
+                        contentDescription = "Sửa",
+                        tint = Color.Gray
                     )
                 }
-                IconButton(onClick = onDeleteClick) {
+                IconButton(
+                    onClick = onDeleteClick,
+                    modifier = Modifier.size(32.dp)
+                ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "Xóa"
+                        contentDescription = "Xóa",
+                        tint = Color.Gray
                     )
                 }
             }

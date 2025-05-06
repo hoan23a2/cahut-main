@@ -8,14 +8,18 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.example.cahut.navigation.Screen
@@ -35,6 +39,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.BorderStroke
+import android.util.Log
 
 // Data class to represent a question
 data class QuizQuestion(
@@ -85,7 +90,7 @@ fun CreateQuizSlideScreen(
 
     // Function to check if quiz can be submitted
     fun canSubmitQuiz(): Boolean {
-        return questions.any { isQuestionValid(it) }
+        return questions.all { isQuestionValid(it) }
     }
 
     // Function to update a question
@@ -95,224 +100,203 @@ fun CreateQuizSlideScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF19444A))
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // Quiz Name Display Section - Không cho sửa
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = Color(0xFF23616A)
-            )
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Card(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 8.dp, vertical = 8.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color(0xFFFFFBE6)
-                    ),
-                    shape = RoundedCornerShape(8.dp),
-                    border = BorderStroke(4.dp, Color(0xFF00AFC6))
-                ) {
-                    Text(
-                        text = examName,
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        color = Color(0xFF23616A),
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                }
-                Spacer(modifier = Modifier.width(16.dp))
-                
-                Button(
-                    onClick = {
-                        scope.launch {
-                            try {
-                                if (!canSubmitQuiz()) {
-                                    snackbarHostState.showSnackbar(
-                                        message = "Vui lòng điền đầy đủ thông tin quiz và ít nhất một câu hỏi",
-                                        duration = SnackbarDuration.Short
-                                    )
-                                    return@launch
-                                }
-                                // Gửi API tạo câu hỏi cho examId đã có, tuần tự từng câu
-                                val validQuestions = questions.filter { isQuestionValid(it) }
-                                var successCount = 0
-                                for (question in validQuestions) {
-                                    try {
-                                        questionRepository.createQuestion(
-                                            examId = examId,
-                                            question = question.question,
-                                            options = if (question.isMultipleChoice) question.options else listOf(question.correctAnswer),
-                                            correctAnswer = question.correctAnswer,
-                                            timeLimit = question.timeLimit
-                                        )
-                                        successCount++
-                                    } catch (e: Exception) {
-                                        snackbarHostState.showSnackbar(
-                                            message = "Lỗi khi tạo câu hỏi: ${e.message}",
-                                            duration = SnackbarDuration.Short
-                                        )
-                                    }
-                                }
-                                snackbarHostState.showSnackbar(
-                                    message = "Tạo quiz thành công với $successCount câu hỏi!",
-                                    duration = SnackbarDuration.Short
-                                )
-                                navController.navigate(Screen.GameLobby.route) {
-                                    popUpTo(Screen.GameLobby.route) {
-                                        inclusive = false
-                                    }
-                                }
-                            } catch (e: Exception) {
-                                snackbarHostState.showSnackbar(
-                                    message = "Lỗi khi tạo câu hỏi: ${e.message}",
-                                    duration = SnackbarDuration.Short
-                                )
-                            }
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (canSubmitQuiz()) Color(0xFF00AFC6) else Color.Gray
-                    ),
-                    enabled = canSubmitQuiz()
-                ) {
-                    Text(
-                        text = "Hoàn thành",
-                        color = Color.White
-                    )
-                }
-            }
-        }
-
-        // Content that can scroll
+    Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState()),
+                .fillMaxSize()
+                .background(Color(0xFF19444A))
+                .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "Câu hỏi ${currentQuestion.id}",
-                style = MaterialTheme.typography.titleMedium.copy(
-                    color = Color.White
-                ),
-                modifier = Modifier.padding(bottom = 24.dp)
-            )
-
+            // Quiz Name Display Section
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp),
+                    .padding(bottom = 16.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = Color(0xFF23616A)
-                ),
-                shape = RoundedCornerShape(16.dp)
-                ) {
-                Column(
+                )
+            ) {
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-            // Image Upload Section
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp)
-                    .border(
-                        width = 2.dp,
-                                color = Color(0xFF00AFC6),
-                        shape = MaterialTheme.shapes.medium
-                    )
-                    .clickable { /* TODO: Handle image selection */ }
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Thêm Hình Ảnh",
-                        modifier = Modifier.size(36.dp),
-                                tint = Color(0xFF00AFC6)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Thêm Hình Ảnh (Tùy Chọn)",
-                        style = MaterialTheme.typography.bodyMedium,
-                                color = Color(0xFF00AFC6)
-                    )
+                    IconButton(
+                        onClick = {
+                            scope.launch {
+                                try {
+                                    examRepository.deleteExam(examId)
+                                    navController.navigate(Screen.GameLobby.route) {
+                                        popUpTo(Screen.GameLobby.route) {
+                                            inclusive = false
+                                        }
+                                    }
+                                } catch (e: Exception) {
+                                    snackbarHostState.showSnackbar(
+                                        message = "Lỗi khi xóa quiz: ${e.message}",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .background(Color(0xFF00AFC6), RoundedCornerShape(8.dp))
+                            .size(40.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Quay lại",
+                            tint = Color.White
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = examName,
+                            color = Color.White,
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    
+                    IconButton(
+                        onClick = {
+                            scope.launch {
+                                try {
+                                    if (!canSubmitQuiz()) {
+                                        snackbarHostState.showSnackbar(
+                                            message = "Vui lòng điền đầy đủ thông tin quiz và ít nhất một câu hỏi",
+                                            duration = SnackbarDuration.Short
+                                        )
+                                        return@launch
+                                    }
+                                    val validQuestions = questions.filter { isQuestionValid(it) }
+                                    
+                                    // Chuyển về GameLobby trước
+                                    navController.navigate(Screen.GameLobby.route) {
+                                        popUpTo(Screen.GameLobby.route) {
+                                            inclusive = false
+                                        }
+                                    }
+
+                                    // Sau đó mới gửi câu hỏi lên API
+                                    var successCount = 0
+                                    for (question in validQuestions) {
+                                        try {
+                                            questionRepository.createQuestion(
+                                                examId = examId,
+                                                question = question.question,
+                                                options = if (question.isMultipleChoice) question.options else listOf(question.correctAnswer),
+                                                correctAnswer = question.correctAnswer,
+                                                timeLimit = question.timeLimit
+                                            )
+                                            successCount++
+                                        } catch (e: Exception) {
+                                            Log.e("CreateQuizSlideScreen", "Lỗi khi tạo câu hỏi: ${e.message}")
+                                        }
+                                    }
+                                    Log.d("CreateQuizSlideScreen", "Đã tạo thành công $successCount câu hỏi")
+                                } catch (e: Exception) {
+                                    Log.e("CreateQuizSlideScreen", "Lỗi khi xử lý: ${e.message}")
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .background(
+                                if (canSubmitQuiz()) Color(0xFF00AFC6) else Color.Gray,
+                                RoundedCornerShape(8.dp)
+                            )
+                            .size(40.dp),
+                        enabled = canSubmitQuiz()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Hoàn thành",
+                            tint = Color.White
+                        )
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Question Input
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color(0xFFFFFBE6)
-                        ),
-                        shape = RoundedCornerShape(8.dp),
-                        border = BorderStroke(4.dp, Color(0xFF00AFC6))
-                    ) {
-                        TextField(
-                value = currentQuestion.question,
-                onValueChange = { 
-                    updateQuestion(currentQuestion.copy(question = it))
-                },
-                            label = { Text("Câu Hỏi", color = Color.Gray) },
-                modifier = Modifier.fillMaxWidth(),
-                            minLines = 2,
-                            colors = TextFieldDefaults.colors(
-                                focusedTextColor = Color(0xFF23616A),
-                                unfocusedTextColor = Color(0xFF23616A),
-                                focusedLabelColor = Color.Gray,
-                                unfocusedLabelColor = Color.Gray,
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent
-                            )
-            )
-                    }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Time Input
-            Row(
+            // Content that can scroll
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Thời gian trả lời:",
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                color = Color.Gray
-                            ),
-                    modifier = Modifier.weight(1f)
+                    text = "Câu hỏi ${currentQuestion.id}",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        color = Color.White
+                    ),
+                    modifier = Modifier.padding(bottom = 24.dp)
                 )
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFF23616A)
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // Image Upload Section
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(120.dp)
+                                .border(
+                                    width = 2.dp,
+                                    color = Color(0xFF00AFC6),
+                                    shape = MaterialTheme.shapes.medium
+                                )
+                                .clickable { /* TODO: Handle image selection */ }
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Thêm Hình Ảnh",
+                                    modifier = Modifier.size(36.dp),
+                                    tint = Color(0xFF00AFC6)
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Thêm Hình Ảnh (Tùy Chọn)",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color(0xFF00AFC6)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Question Input
                         Card(
                             modifier = Modifier
-                                .width(120.dp)
+                                .fillMaxWidth()
                                 .padding(vertical = 8.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = Color(0xFFFFFBE6)
@@ -321,27 +305,13 @@ fun CreateQuizSlideScreen(
                             border = BorderStroke(4.dp, Color(0xFF00AFC6))
                         ) {
                             TextField(
-                    value = currentQuestion.timeLimit.toString(),
-                    onValueChange = { 
-                        val newValue = it.filter { char -> char.isDigit() }
-                        if (newValue.isEmpty()) {
-                            updateQuestion(currentQuestion.copy(timeLimit = 0))
-                        } else {
-                            val seconds = newValue.toIntOrNull() ?: 0
-                            val timeLimit = when {
-                                seconds > 300 -> 300 // Max 5 minutes
-                                else -> seconds
-                            }
-                            updateQuestion(currentQuestion.copy(timeLimit = timeLimit))
-                        }
-                    },
-                                label = { Text("Giây", color = Color.Gray) },
+                                value = currentQuestion.question,
+                                onValueChange = { 
+                                    updateQuestion(currentQuestion.copy(question = it))
+                                },
+                                label = { Text("Câu Hỏi", color = Color.Gray) },
                                 modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Number,
-                        imeAction = ImeAction.Done
-                    ),
-                    singleLine = true,
+                                minLines = 2,
                                 colors = TextFieldDefaults.colors(
                                     focusedTextColor = Color(0xFF23616A),
                                     unfocusedTextColor = Color(0xFF23616A),
@@ -349,41 +319,31 @@ fun CreateQuizSlideScreen(
                                     unfocusedLabelColor = Color.Gray,
                                     focusedContainerColor = Color.Transparent,
                                     unfocusedContainerColor = Color.Transparent
-                                ),
-                    trailingIcon = {
-                        Text(
-                            text = "giây",
-                            modifier = Modifier.padding(end = 16.dp),
-                            style = MaterialTheme.typography.bodyMedium,
-                                        color = Color.Gray
-                        )
-                    }
-                )
-                        }
-            }
-
-                // Multiple Choice Options
-                currentQuestion.options.forEachIndexed { index, option ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = currentQuestion.correctAnswer == option,
-                            onClick = { 
-                                updateQuestion(currentQuestion.copy(correctAnswer = option))
-                                },
-                                colors = RadioButtonDefaults.colors(
-                                    selectedColor = Color(0xFF00AFC6),
-                                    unselectedColor = Color(0xFF00AFC6)
                                 )
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Time Input
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Thời gian trả lời:",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    color = Color.White
+                                ),
+                                modifier = Modifier.weight(1f)
                             )
                             Card(
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                                    .width(120.dp)
+                                    .padding(vertical = 8.dp),
                                 colors = CardDefaults.cardColors(
                                     containerColor = Color(0xFFFFFBE6)
                                 ),
@@ -391,15 +351,27 @@ fun CreateQuizSlideScreen(
                                 border = BorderStroke(4.dp, Color(0xFF00AFC6))
                             ) {
                                 TextField(
-                            value = option,
-                            onValueChange = { newValue ->
-                                val newOptions = currentQuestion.options.toMutableList().apply {
-                                    set(index, newValue)
-                                }
-                                updateQuestion(currentQuestion.copy(options = newOptions))
-                            },
-                                    label = { Text("Đáp Án ${('A' + index)}", color = Color.Gray) },
+                                    value = currentQuestion.timeLimit.toString(),
+                                    onValueChange = { 
+                                        val newValue = it.filter { char -> char.isDigit() }
+                                        if (newValue.isEmpty()) {
+                                            updateQuestion(currentQuestion.copy(timeLimit = 0))
+                                        } else {
+                                            val seconds = newValue.toIntOrNull() ?: 0
+                                            val timeLimit = when {
+                                                seconds > 300 -> 300 // Max 5 minutes
+                                                else -> seconds
+                                            }
+                                            updateQuestion(currentQuestion.copy(timeLimit = timeLimit))
+                                        }
+                                    },
+                                    label = { Text("Giây", color = Color.Gray) },
                                     modifier = Modifier.fillMaxWidth(),
+                                    keyboardOptions = KeyboardOptions(
+                                        keyboardType = KeyboardType.Number,
+                                        imeAction = ImeAction.Done
+                                    ),
+                                    singleLine = true,
                                     colors = TextFieldDefaults.colors(
                                         focusedTextColor = Color(0xFF23616A),
                                         unfocusedTextColor = Color(0xFF23616A),
@@ -407,116 +379,233 @@ fun CreateQuizSlideScreen(
                                         unfocusedLabelColor = Color.Gray,
                                         focusedContainerColor = Color.Transparent,
                                         unfocusedContainerColor = Color.Transparent
-                                    )
-                )
-                            }
-                        }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Fun Fact Input
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color(0xFFFFFBE6)
-                        ),
-                        shape = RoundedCornerShape(8.dp),
-                        border = BorderStroke(4.dp, Color(0xFF00AFC6))
-                    ) {
-                        TextField(
-                value = currentQuestion.funFact,
-                onValueChange = { 
-                    updateQuestion(currentQuestion.copy(funFact = it))
-                },
-                            label = { Text("Thông Tin Thêm (Tùy Chọn)", color = Color.Gray) },
-                modifier = Modifier.fillMaxWidth(),
-                            minLines = 2,
-                            colors = TextFieldDefaults.colors(
-                                focusedTextColor = Color(0xFF23616A),
-                                unfocusedTextColor = Color(0xFF23616A),
-                                focusedLabelColor = Color.Gray,
-                                unfocusedLabelColor = Color.Gray,
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent
-                            )
-                        )
-                    }
-                }
-            }
-        }
-
-        // Bottom Navigation Buttons - Outside of scrollable area
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = Color(0xFF23616A)
-            )
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
-                // Slides Row
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                    // Question Slides
-                    questions.forEach { question ->
-                        Card(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clickable { 
-                                    currentSlide = question.id
-                                }
-                                .then(
-                                    if (question.id == currentSlide) Modifier.border(2.dp, Color(0xFF00AFC6), RoundedCornerShape(8.dp))
-                                    else Modifier
-                                ),
-                            colors = CardDefaults.cardColors(
-                                containerColor = if (question.id == currentSlide)
-                                    Color(0xFF23616A)
-                                else
-                                    Color(0xFF00AFC6)
-                            ),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                                    text = question.id.toString(),
-                                    color = Color.White,
-                                    style = MaterialTheme.typography.titleMedium
+                                    ),
+                                    trailingIcon = {
+                                        Text(
+                                            text = "giây",
+                                            modifier = Modifier.padding(end = 16.dp),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = Color.Gray
+                                        )
+                                    }
                                 )
                             }
                         }
+
+                        // Multiple Choice Options
+                        currentQuestion.options.forEachIndexed { index, option ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = currentQuestion.correctAnswer == option,
+                                    onClick = { 
+                                        updateQuestion(currentQuestion.copy(correctAnswer = option))
+                                    },
+                                    colors = RadioButtonDefaults.colors(
+                                        selectedColor = Color(0xFF00AFC6),
+                                        unselectedColor = Color(0xFF00AFC6)
+                                    )
+                                )
+                                Card(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(horizontal = 8.dp, vertical = 8.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = Color(0xFFFFFBE6)
+                                    ),
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = BorderStroke(4.dp, Color(0xFF00AFC6))
+                                ) {
+                                    TextField(
+                                        value = option,
+                                        onValueChange = { newValue ->
+                                            val newOptions = currentQuestion.options.toMutableList().apply {
+                                                set(index, newValue)
+                                            }
+                                            updateQuestion(currentQuestion.copy(options = newOptions))
+                                        },
+                                        label = { Text("Đáp Án ${('A' + index)}", color = Color.Gray) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = TextFieldDefaults.colors(
+                                            focusedTextColor = Color(0xFF23616A),
+                                            unfocusedTextColor = Color(0xFF23616A),
+                                            focusedLabelColor = Color.Gray,
+                                            unfocusedLabelColor = Color.Gray,
+                                            focusedContainerColor = Color.Transparent,
+                                            unfocusedContainerColor = Color.Transparent
+                                        )
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Fun Fact Input
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color(0xFFFFFBE6)
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(4.dp, Color(0xFF00AFC6))
+                        ) {
+                            TextField(
+                                value = currentQuestion.funFact,
+                                onValueChange = { 
+                                    updateQuestion(currentQuestion.copy(funFact = it))
+                                },
+                                label = { Text("Thông Tin Thêm (Tùy Chọn)", color = Color.Gray) },
+                                modifier = Modifier.fillMaxWidth(),
+                                minLines = 2,
+                                colors = TextFieldDefaults.colors(
+                                    focusedTextColor = Color(0xFF23616A),
+                                    unfocusedTextColor = Color(0xFF23616A),
+                                    focusedLabelColor = Color.Gray,
+                                    unfocusedLabelColor = Color.Gray,
+                                    focusedContainerColor = Color.Transparent,
+                                    unfocusedContainerColor = Color.Transparent
+                                )
+                            )
+                        }
+                    }
+                }
+
+                // Delete Slide Button
+                if (questions.size > 1) {
+                    Button(
+                        onClick = {
+                            // Xóa slide hiện tại
+                            questions = questions.filter { it.id != currentSlide }
+                            // Cập nhật lại ID cho các slide còn lại
+                            questions = questions.mapIndexed { index, question ->
+                                question.copy(id = index + 1)
+                            }
+                            // Chuyển về slide trước đó hoặc slide đầu tiên
+                            currentSlide = if (currentSlide > 1) currentSlide - 1 else 1
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFFFA7A0)
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Xóa slide",
+                                tint = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Xóa slide",
+                                color = Color.White,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Bottom Navigation Buttons
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFF23616A)
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    // Slides Row
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(end = 75.dp)
+                    ) {
+                        val scrollState = rememberScrollState()
+                        LaunchedEffect(questions.size) {
+                            scrollState.animateScrollTo(scrollState.maxValue)
+                        }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(scrollState),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            questions.forEach { question ->
+                                Card(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clickable { 
+                                            currentSlide = question.id
+                                        }
+                                        .then(
+                                            if (question.id == currentSlide) Modifier.border(2.dp, Color(0xFF00AFC6), RoundedCornerShape(8.dp))
+                                            else Modifier
+                                        ),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (question.id == currentSlide)
+                                            Color(0xFF23616A)
+                                        else
+                                            Color(0xFF00AFC6)
+                                    ),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Row(
+                                            horizontalArrangement = Arrangement.Center,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = question.id.toString(),
+                                                color = Color.White,
+                                                style = MaterialTheme.typography.titleMedium
+                                            )
+                                            if (!isQuestionValid(question)) {
+                                                Spacer(modifier = Modifier.width(2.dp))
+                                                Icon(
+                                                    imageVector = Icons.Default.Warning,
+                                                    contentDescription = "Chưa hoàn thành",
+                                                    tint = Color(0xFFFFA7A0),
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
-    }
 
-    // Add SnackbarHost to show messages
-    Box(modifier = Modifier.fillMaxSize()) {
+        // SnackbarHost
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.BottomCenter)
         )
-    }
 
-    // Thêm FloatingActionButton bên ngoài navigation bar, luôn ở sát phải
-    Box(modifier = Modifier.fillMaxSize()) {
-        // ... existing content ...
+        // FloatingActionButton
         FloatingActionButton(
             onClick = {
                 val newQuestion = QuizQuestion(questions.size + 1)
@@ -527,7 +616,7 @@ fun CreateQuizSlideScreen(
             contentColor = Color.White,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(end = 32.dp, bottom = 32.dp)
+                .padding(end = 32.dp, bottom = 46.dp)
         ) {
             Icon(Icons.Default.Add, contentDescription = "Thêm câu hỏi")
         }

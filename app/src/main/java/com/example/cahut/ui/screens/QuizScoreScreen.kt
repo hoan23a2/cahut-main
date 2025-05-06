@@ -35,6 +35,7 @@ fun QuizScoreScreen(navController: NavController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color(0xFF23616A))
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
