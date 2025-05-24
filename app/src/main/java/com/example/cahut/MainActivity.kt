@@ -13,7 +13,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.cahut.navigation.Screen
-import com.example.cahut.ui.screens.DatabaseDebugScreen
 import com.example.cahut.ui.screens.GameLobbyScreen
 import com.example.cahut.ui.screens.LoginScreen
 import com.example.cahut.ui.screens.RegisterScreen
@@ -48,9 +47,6 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(Screen.GameLobby.route) {
                             GameLobbyScreen(navController)
-                        }
-                        composable(Screen.DatabaseDebug.route) {
-                            DatabaseDebugScreen(navController)
                         }
                         composable(Screen.CreateQuizInfo.route) {
                             CreateQuizInfoScreen(navController)

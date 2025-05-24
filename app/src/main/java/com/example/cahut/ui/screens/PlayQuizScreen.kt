@@ -1,3 +1,4 @@
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 package com.example.cahut.ui.screens
 
 import android.content.Context
@@ -45,6 +46,13 @@ import androidx.compose.ui.graphics.nativeCanvas
 import android.graphics.Paint as AndroidPaint
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.border
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.animation.core.tween
 
 @Composable
 fun PlayQuizScreen(
@@ -63,6 +71,7 @@ fun PlayQuizScreen(
     var questionIndex by remember { mutableStateOf(0) }
     var totalQuestions by remember { mutableStateOf(0) }
     var timeLeft by remember { mutableStateOf(0) }
+    var timeLeftMs by remember { mutableStateOf(0L) }
     var countdown by remember { mutableStateOf<Int?>(null) }
     var selectedAnswer by remember { mutableStateOf<String?>(null) }
     var leaderboard by remember { mutableStateOf<List<LeaderboardEntry>?>(null) }
@@ -95,11 +104,27 @@ fun PlayQuizScreen(
         }
     }
 
-    LaunchedEffect(timeLeft) {
-        if (timeLeft > 0 && question != null) {
-            delay(1000)
-            timeLeft--
-        } else if (timeLeft == 0 && question != null) {
+    LaunchedEffect(question) {
+        val currentQuestion = question
+        if (currentQuestion != null) {
+            val totalMs = currentQuestion.timeLimit * 1000L
+            val startTime = System.currentTimeMillis()
+            var running = true
+            while (running) {
+                val elapsed = System.currentTimeMillis() - startTime
+                val left = (totalMs - elapsed).coerceAtLeast(0L)
+                timeLeftMs = left
+                val newTimeLeft = (left / 1000).toInt()
+                if (newTimeLeft != timeLeft) {
+                    timeLeft = newTimeLeft
+                }
+                if (left <= 0L) {
+                    running = false
+                } else {
+                    delay(16)
+                }
+            }
+            timeLeft = 0
             if (selectedAnswer == null) {
                 socketService.submitAnswer(roomId, "")
             }
@@ -123,6 +148,7 @@ fun PlayQuizScreen(
                     questionIndex = event.questionIndex
                     totalQuestions = event.totalQuestions
                     timeLeft = event.question.timeLimit
+                    timeLeftMs = event.question.timeLimit * 1000L
                     countdown = null
                     selectedAnswer = null
                     showScores = null
@@ -367,12 +393,62 @@ fun PlayQuizScreen(
                                 )
                             }
 
-                            Text(
-                                "⏳ Thời gian còn lại: $timeLeft giây",
-                                color = Color.White,
-                                fontSize = 16.sp,
-                                modifier = Modifier.padding(bottom = 16.dp)
+                            // Progress bar thời gian custom
+                            val totalTime = question?.timeLimit ?: 1
+                            val progress = if (totalTime > 0) timeLeftMs.toFloat() / (totalTime * 1000f) else 0f
+                            val scoreCurrent = (1000 * progress).toInt().coerceAtLeast(0)
+                            val rainbowColors = listOf(
+                                Color(0xFFFFE49E), // vàng nhạt
+                                Color(0xFFFFA7A0), // đỏ nhạt
+                                Color(0xFFC6EA84), // xanh lá nhạt
+                                Color(0xFFABFDD7), // xanh ngọc nhạt
+                                Color(0xFFFFC679)  // cam nhạt
                             )
+                            val barHeight = 15.dp
+                            val barRadius = 12.dp
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(24.dp)
+                                    .background(Color.Transparent),
+                                contentAlignment = Alignment.CenterStart
+                            ) {
+                                Canvas(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(barHeight)
+                                ) {
+                                    val width = size.width
+                                    val height = size.height
+                                    // Draw background bar
+                                    drawRoundRect(
+                                        color = Color(0xFF2e3d3d),
+                                        size = size,
+                                        cornerRadius = CornerRadius(barRadius.toPx(), barRadius.toPx())
+                                    )
+                                    // Draw progress bar with rainbow gradient
+                                    if (progress > 0f) {
+                                        drawRoundRect(
+                                            brush = Brush.linearGradient(
+                                                colors = rainbowColors,
+                                                start = Offset(0f, 0f),
+                                                end = Offset(width, 0f)
+                                            ),
+                                            size = Size(width * progress.coerceIn(0f, 1f), height),
+                                            cornerRadius = CornerRadius(barRadius.toPx(), barRadius.toPx())
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = "$scoreCurrent",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp,
+                                    modifier = Modifier
+                                        .align(Alignment.CenterEnd)
+                                        .padding(end = 8.dp)
+                                )
+                            }
                         }
 
                         Column(
@@ -608,73 +684,151 @@ fun PlayQuizScreen(
                     }
                 }
                 showScores != null -> {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color(0xFF23616A)
-                        )
+                    val topScores = showScores!!.sortedByDescending { it.score }.take(10)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .fillMaxHeight(),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Column(
+                        LazyColumn(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(24.dp),
+                                .align(Alignment.Center),
+                            userScrollEnabled = false,
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text(
-                                "Bảng xếp hạng",
-                                color = Color.White,
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                "Điểm số hiện tại",
-                                color = Color.White,
-                                fontSize = 18.sp
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                "Người chơi $currentUsername đang có ${showScores?.find { it.id == currentUserId }?.score ?: 0} điểm!!!",
-                                color = Color.White,
-                                fontSize = 16.sp
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            showScores?.let { scores ->
-                                if (scores.isNotEmpty()) {
-                                    LazyColumn {
-                                        items(scores) { entry ->
-                                            Row(
+                            items(topScores, key = { it.id }) { entry ->
+                                val idx = topScores.indexOf(entry)
+                                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                    Row(
+                                        modifier = Modifier
+                                            .widthIn(max = 420.dp)
+                                            .padding(vertical = 6.dp)
+                                            .background(
+                                                color = Color(0xFFffc679),
+                                                shape = RoundedCornerShape(24.dp)
+                                            )
+                                            .border(2.dp, Color.Black, RoundedCornerShape(24.dp))
+                                            .animateItemPlacement(
+                                                animationSpec = tween(durationMillis = 500)
+                                            ),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        // Số thứ tự
+                                        Box(modifier = Modifier.width(32.dp), contentAlignment = Alignment.Center) {
+                                            Text(
+                                                text = "${idx + 1}",
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color.Black,
+                                                fontSize = 20.sp,
+                                                style = LocalTextStyle.current.copy(
+                                                    drawStyle = androidx.compose.ui.graphics.drawscope.Stroke(width = 6f)
+                                                ),
+                                                textAlign = TextAlign.Center
+                                            )
+                                            Text(
+                                                text = "${idx + 1}",
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color.White,
+                                                fontSize = 20.sp,
+                                                textAlign = TextAlign.Center
+                                            )
+                                        }
+                                        // Avatar ký tự đầu
+                                        Box(
+                                            modifier = Modifier
+                                                .size(40.dp)
+                                                .clip(RoundedCornerShape(20.dp))
+                                                .background(Color(0xFFFFE49E))
+                                                .border(2.dp, Color.Black, RoundedCornerShape(20.dp)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            val avatarChar = entry.username.firstOrNull()?.uppercase() ?: "?"
+                                            Text(
+                                                text = avatarChar,
+                                                color = Color.Black,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 22.sp,
+                                                style = LocalTextStyle.current.copy(
+                                                    drawStyle = androidx.compose.ui.graphics.drawscope.Stroke(width = 6f)
+                                                )
+                                            )
+                                            Text(
+                                                text = avatarChar,
+                                                color = Color.White,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 22.sp
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        // Tên và nhãn host
+                                        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                                            Text(
+                                                text = entry.username,
+                                                color = Color.Black,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 18.sp,
+                                                style = LocalTextStyle.current.copy(
+                                                    drawStyle = androidx.compose.ui.graphics.drawscope.Stroke(width = 6f)
+                                                )
+                                            )
+                                            Text(
+                                                text = entry.username,
+                                                color = Color.White,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 18.sp
+                                            )
+                                        }
+                                        if (entry.rank == 1) {
+                                            Box(
                                                 modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(vertical = 8.dp),
-                                                horizontalArrangement = Arrangement.SpaceBetween
+                                                    .background(Color(0xFFFFE49E), RoundedCornerShape(8.dp))
+                                                    .border(2.dp, Color.Black, RoundedCornerShape(8.dp))
+                                                    .padding(horizontal = 8.dp, vertical = 2.dp),
+                                                contentAlignment = Alignment.Center
                                             ) {
                                                 Text(
-                                                    "Hạng ${entry.rank}",
-                                                    color = Color.White
+                                                    text = "HOST",
+                                                    color = Color.Black,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 12.sp,
+                                                    style = LocalTextStyle.current.copy(
+                                                        drawStyle = androidx.compose.ui.graphics.drawscope.Stroke(width = 6f)
+                                                    )
                                                 )
                                                 Text(
-                                                    entry.username,
-                                                    color = Color.White
-                                                )
-                                                Text(
-                                                    "${entry.score} điểm",
-                                                    color = Color.White
+                                                    text = "HOST",
+                                                    color = Color.White,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 12.sp
                                                 )
                                             }
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                        }
+                                        // Điểm
+                                        Box(modifier = Modifier.width(56.dp)
+                                            .padding(end = 12.dp), contentAlignment = Alignment.CenterEnd) {
+                                            Text(
+                                                text = "${entry.score}",
+                                                color = Color.Black,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 20.sp,
+                                                style = LocalTextStyle.current.copy(
+                                                    drawStyle = androidx.compose.ui.graphics.drawscope.Stroke(width = 6f)
+                                                ),
+                                                textAlign = TextAlign.End
+                                            )
+                                            Text(
+                                                text = "${entry.score}",
+                                                color = Color.White,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 20.sp,
+                                                textAlign = TextAlign.End
+                                            )
                                         }
                                     }
-                                } else {
-                                    Text(
-                                        "Chưa có dữ liệu xếp hạng",
-                                        color = Color.White
-                                    )
                                 }
-                            } ?: run {
-                                Text(
-                                    "Chưa có dữ liệu xếp hạng",
-                                    color = Color.White
-                                )
                             }
                         }
                     }
