@@ -251,12 +251,13 @@ class SocketService(private val context: Context) {
         })
     }
 
-    fun submitAnswer(roomId: String, answer: String) {
+    fun submitAnswer(roomId: String, answer: String, score: Int) {
         val token = sharedPreferences.getString("auth_token", "") ?: return
-        Log.d("SocketService", "Submitting answer: $answer for room: $roomId")
+        Log.d("SocketService", "Submitting answer: $answer with score: $score for room: $roomId")
         socket?.emit("submit-answer", JSONObject().apply {
             put("roomId", roomId)
             put("answer", answer)
+            put("score", score)
             put("token", token)
         })
     }

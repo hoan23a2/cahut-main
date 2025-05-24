@@ -74,6 +74,8 @@ fun PlayQuizScreen(
     var timeLeftMs by remember { mutableStateOf(0L) }
     var countdown by remember { mutableStateOf<Int?>(null) }
     var selectedAnswer by remember { mutableStateOf<String?>(null) }
+    var hasAnswered by remember { mutableStateOf(false) }
+    var scoreWhenAnswered by remember { mutableStateOf<Int?>(null) }
     var leaderboard by remember { mutableStateOf<List<LeaderboardEntry>?>(null) }
     var showScores by remember { mutableStateOf<List<LeaderboardEntry>?>(null) }
     var showResults by remember { mutableStateOf<QuizResult?>(null) }
@@ -107,6 +109,9 @@ fun PlayQuizScreen(
     LaunchedEffect(question) {
         val currentQuestion = question
         if (currentQuestion != null) {
+            hasAnswered = false
+            scoreWhenAnswered = null
+            val totalTimeLimit = currentQuestion.timeLimit
             val totalMs = currentQuestion.timeLimit * 1000L
             val startTime = System.currentTimeMillis()
             var running = true
@@ -125,8 +130,8 @@ fun PlayQuizScreen(
                 }
             }
             timeLeft = 0
-            if (selectedAnswer == null) {
-                socketService.submitAnswer(roomId, "")
+            if (!hasAnswered) {
+                socketService.submitAnswer(roomId, "", 0)
             }
             socketService.timeUp(roomId)
         }
@@ -154,6 +159,7 @@ fun PlayQuizScreen(
                     showScores = null
                     showResults = null
                     loading = false
+                    hasAnswered = false
                 }
                 is SocketService.QuizEvent.ShowResults -> {
                     showResults = QuizResult(
@@ -397,6 +403,7 @@ fun PlayQuizScreen(
                             val totalTime = question?.timeLimit ?: 1
                             val progress = if (totalTime > 0) timeLeftMs.toFloat() / (totalTime * 1000f) else 0f
                             val scoreCurrent = (1000 * progress).toInt().coerceAtLeast(0)
+                            val displayedScore = scoreWhenAnswered ?: scoreCurrent
                             val rainbowColors = listOf(
                                 Color(0xFFFFE49E), // vàng nhạt
                                 Color(0xFFFFA7A0), // đỏ nhạt
@@ -440,7 +447,7 @@ fun PlayQuizScreen(
                                     }
                                 }
                                 Text(
-                                    text = "$scoreCurrent",
+                                    text = "$displayedScore",
                                     color = Color.White,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 18.sp,
@@ -476,9 +483,13 @@ fun PlayQuizScreen(
                                 ) {
                                     Card(
                                         onClick = {
-                                            if (selectedAnswer == null) {
+                                            if (selectedAnswer == null && !hasAnswered) {
                                                 selectedAnswer = option
-                                                socketService.submitAnswer(roomId, option)
+                                                hasAnswered = true
+                                                val totalTimeMsForScore = (question?.timeLimit ?: 1) * 1000L
+                                                val scoreAtAnswer = (1000 * (timeLeftMs.toFloat() / totalTimeMsForScore.toFloat())).toInt().coerceAtLeast(0)
+                                                scoreWhenAnswered = scoreAtAnswer
+                                                socketService.submitAnswer(roomId, option, scoreAtAnswer)
                                             }
                                         },
                                         modifier = Modifier
