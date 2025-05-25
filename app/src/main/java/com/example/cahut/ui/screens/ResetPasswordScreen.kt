@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import com.example.cahut.data.service.AuthService
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.text.KeyboardOptions
+import com.example.cahut.utils.showCustomToast
 
 @Composable
 fun ResetPasswordScreen(navController: NavController) {
@@ -101,16 +102,28 @@ fun ResetPasswordScreen(navController: NavController) {
                                     isSendingCode = true
                                     authService.forgotPassword(email).fold(
                                         onSuccess = { message ->
-                                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                            val successMessage = try {
+                                                val jsonObject = org.json.JSONObject(message)
+                                                jsonObject.getString("message")
+                                            } catch (e: Exception) {
+                                                message
+                                            }
+                                            context.showCustomToast(successMessage)
                                         },
                                         onFailure = { error ->
-                                            Toast.makeText(context, error.message ?: "Lỗi không xác định", Toast.LENGTH_SHORT).show()
+                                            val errorMessage = try {
+                                                val jsonObject = org.json.JSONObject(error.message ?: "")
+                                                jsonObject.getString("message")
+                                            } catch (e: Exception) {
+                                                error.message ?: "Lỗi không xác định"
+                                            }
+                                            context.showCustomToast(errorMessage)
                                         }
                                     )
                                     isSendingCode = false
                                 }
                             } else {
-                                Toast.makeText(context, "Vui lòng nhập email", Toast.LENGTH_SHORT).show()
+                                context.showCustomToast("Vui lòng nhập email")
                             }
                         },
                         enabled = !isSendingCode
@@ -178,24 +191,36 @@ fun ResetPasswordScreen(navController: NavController) {
             Button(
                 onClick = {
                     if (email.isEmpty() || code.isEmpty() || newPassword.isEmpty() || confirmPassword.isEmpty()) {
-                        Toast.makeText(context, "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show()
+                        context.showCustomToast("Vui lòng nhập đầy đủ thông tin")
                         return@Button
                     }
                     if (newPassword != confirmPassword) {
-                        Toast.makeText(context, "Mật khẩu mới và xác nhận mật khẩu không khớp", Toast.LENGTH_SHORT).show()
+                        context.showCustomToast("Mật khẩu mới và xác nhận mật khẩu không khớp")
                         return@Button
                     }
                     scope.launch {
                         isResettingPassword = true
                         authService.resetPassword(email, code, newPassword).fold(
                             onSuccess = { message ->
-                                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                val successMessage = try {
+                                    val jsonObject = org.json.JSONObject(message)
+                                    jsonObject.getString("message")
+                                } catch (e: Exception) {
+                                    message
+                                }
+                                context.showCustomToast(successMessage)
                                 navController.navigate(Screen.Login.route) {
                                     popUpTo(Screen.ResetPassword.route)
                                 }
                             },
                             onFailure = { error ->
-                                Toast.makeText(context, error.message ?: "Lỗi không xác định", Toast.LENGTH_SHORT).show()
+                                val errorMessage = try {
+                                    val jsonObject = org.json.JSONObject(error.message ?: "")
+                                    jsonObject.getString("message")
+                                } catch (e: Exception) {
+                                    error.message ?: "Lỗi không xác định"
+                                }
+                                context.showCustomToast(errorMessage)
                             }
                         )
                         isResettingPassword = false

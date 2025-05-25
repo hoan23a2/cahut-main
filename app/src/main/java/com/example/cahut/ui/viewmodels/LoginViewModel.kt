@@ -1,6 +1,7 @@
 package com.example.cahut.ui.viewmodels
 
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cahut.data.repository.AuthRepository
@@ -37,6 +38,7 @@ class LoginViewModel : ViewModel() {
                     )
                 },
                 onFailure = { exception ->
+                    Log.e("LoginViewModel", "Login failed", exception)
                     _loginState.value = _loginState.value.copy(
                         isLoading = false,
                         error = exception.message ?: "Đăng nhập thất bại"

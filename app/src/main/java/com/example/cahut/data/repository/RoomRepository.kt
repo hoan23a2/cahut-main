@@ -2,7 +2,6 @@ package com.example.cahut.data.repository
 
 import android.content.Context
 import android.util.Log
-import android.widget.Toast
 import com.example.cahut.data.api.ApiService
 import com.example.cahut.data.api.CreateRoomRequest
 import com.example.cahut.data.api.JoinRoomRequest
@@ -14,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import retrofit2.Response
+import com.example.cahut.utils.showCustomToast
 
 class RoomRepository(private val context: Context) {
     private val apiService: ApiService = RetrofitClient.createService(context)
@@ -21,7 +21,7 @@ class RoomRepository(private val context: Context) {
     private val socketService = SocketService(context)
 
     private fun showToast(message: String) {
-        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        context.showCustomToast(message)
     }
 
     private fun logResponse(response: Response<*>) {

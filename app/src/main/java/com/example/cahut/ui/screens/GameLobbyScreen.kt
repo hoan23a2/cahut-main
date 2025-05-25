@@ -97,6 +97,11 @@ fun GameLobbyScreen(navController: NavController) {
     val snackbarHostState = remember { SnackbarHostState() }
     var isPinError by remember { mutableStateOf(false) }
     val authService = remember { AuthService(context) }
+    
+    // Add state for userImage
+    var currentUserImage by remember { 
+        mutableStateOf(JwtUtils.getUserImageFromToken(sharedPreferences.getString("auth_token", "") ?: ""))
+    }
 
     // QR code scanner launcher
     val barcodeLauncher = rememberLauncherForActivityResult(
@@ -359,7 +364,7 @@ fun GameLobbyScreen(navController: NavController) {
 
                                             scope.launch {
                                                 try {
-                                                    authService.updateProfile(
+                                                    val newToken = authService.updateProfile(
                                                         username = username,
                                                         userImage = userImage,
                                                         newPassword = if (newPassword.isBlank()) null else newPassword,
@@ -371,10 +376,15 @@ fun GameLobbyScreen(navController: NavController) {
                                                     newPassword = ""
                                                     isEditing = false
                                                     
-                                                    // Refresh token and user info
-                                                    val token = sharedPreferences.getString("auth_token", "") ?: ""
-                                                    username = JwtUtils.getUsernameFromToken(token) ?: ""
-                                                    userImage = JwtUtils.getUserImageFromToken(token)
+                                                    // Update token in SharedPreferences
+                                                    sharedPreferences.edit().putString("auth_token", newToken).apply()
+                                                    
+                                                    // Refresh user info from new token
+                                                    username = JwtUtils.getUsernameFromToken(newToken) ?: ""
+                                                    userImage = JwtUtils.getUserImageFromToken(newToken)
+                                                    
+                                                    // Update the currentUserImage state
+                                                    currentUserImage = userImage
 
                                                     snackbarHostState.showSnackbar(
                                                         message = "Cập nhật profile thành công!",
@@ -446,7 +456,7 @@ fun GameLobbyScreen(navController: NavController) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
-                    painter = painterResource(id = context.resources.getIdentifier("a${JwtUtils.getUserImageFromToken(sharedPreferences.getString("auth_token", "") ?: "")}", "drawable", context.packageName)),
+                    painter = painterResource(id = context.resources.getIdentifier("a${currentUserImage}", "drawable", context.packageName)),
                     contentDescription = "Hồ Sơ",
                     modifier = Modifier
                         .size(40.dp)

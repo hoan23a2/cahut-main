@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.cahut.ui.viewmodels.RegisterViewModel
 import kotlinx.coroutines.launch
+import com.example.cahut.utils.showCustomToast
 
 @Composable
 fun RegisterScreen(navController: NavController) {
@@ -38,14 +39,20 @@ fun RegisterScreen(navController: NavController) {
     
     LaunchedEffect(registerState.isRegistered) {
         if (registerState.isRegistered) {
-            Toast.makeText(context, "Đăng ký thành công", Toast.LENGTH_SHORT).show()
+            context.showCustomToast("Đăng ký thành công")
             navController.navigate(Screen.Login.route)
         }
     }
     
     LaunchedEffect(registerState.error) {
         registerState.error?.let { error ->
-            Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+            val errorMessage = try {
+                val jsonObject = org.json.JSONObject(error)
+                jsonObject.getString("message")
+            } catch (e: Exception) {
+                error
+            }
+            context.showCustomToast(errorMessage)
             viewModel.clearError()
         }
     }
@@ -121,7 +128,7 @@ fun RegisterScreen(navController: NavController) {
         Button(
             onClick = {
                 if (email.isBlank() || password.isBlank() || username.isBlank()) {
-                    Toast.makeText(context, "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show()
+                    context.showCustomToast("Vui lòng nhập đầy đủ thông tin")
                     return@Button
                 }
                 viewModel.register(username, email, password)
