@@ -178,7 +178,6 @@ class SocketService(private val context: Context) {
                                 rank = entry.getInt("rank"),
                                 username = entry.getString("username"),
                                 score = entry.getInt("score"),
-                                userImage = entry.optInt("userImage", 1),
                                 isCorrectForLastQuestion = if (entry.has("isCorrectForLastQuestion")) entry.getBoolean("isCorrectForLastQuestion") else null
                             )
                         }
@@ -200,7 +199,6 @@ class SocketService(private val context: Context) {
                                 rank = entry.getInt("rank"),
                                 username = entry.getString("username"),
                                 score = entry.getInt("score"),
-                                userImage = entry.optInt("userImage", 1),
                                 isCorrectForLastQuestion = if (entry.has("isCorrectForLastQuestion")) entry.getBoolean("isCorrectForLastQuestion") else null
                             )
                         }
