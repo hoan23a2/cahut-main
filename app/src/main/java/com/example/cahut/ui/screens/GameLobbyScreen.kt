@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -60,6 +61,18 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import coil.compose.rememberAsyncImagePainter
 import android.content.Context
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.border
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
 
 @Composable
 fun GameLobbyScreen(navController: NavController) {
@@ -128,51 +141,229 @@ fun GameLobbyScreen(navController: NavController) {
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            ModalDrawerSheet {
+            ModalDrawerSheet(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .windowInsetsPadding(WindowInsets.ime)
+            ) {
                 val token = sharedPreferences.getString("auth_token", "") ?: ""
-                val username = JwtUtils.getUsernameFromToken(token) ?: ""
-                val userImage = JwtUtils.getUserImageFromToken(token)
-                val baseUrl = AppConfig.getBaseUrl()
+                var username by remember { mutableStateOf(JwtUtils.getUsernameFromToken(token) ?: "") }
+                var userImage by remember { mutableStateOf(JwtUtils.getUserImageFromToken(token)) }
+                var newPassword by remember { mutableStateOf("") }
+                var currentPassword by remember { mutableStateOf("") }
+                var showNewPassword by remember { mutableStateOf(false) }
+                var showCurrentPassword by remember { mutableStateOf(false) }
+                var selectedAvatarIndex by remember { mutableStateOf(userImage - 1) }
+                val scrollState = rememberScrollState()
+                var isEditing by remember { mutableStateOf(false) }
 
-                Column(
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
+                        .fillMaxSize()
+                        .windowInsetsPadding(WindowInsets.navigationBars)
                 ) {
-                    // Avatar and Username Section
-                    Box(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(120.dp)
-                            .padding(bottom = 16.dp),
-                        contentAlignment = Alignment.Center
+                            .padding(16.dp)
                     ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
+                        // Avatar and Username Section
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(180.dp)
+                                .padding(bottom = 16.dp),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Image(
-                                painter = painterResource(id = context.resources.getIdentifier("a${userImage}", "drawable", context.packageName)),
-                                contentDescription = "User avatar",
-                                modifier = Modifier
-                                    .size(80.dp)
-                                    .clip(RoundedCornerShape(40.dp)),
-                                contentScale = ContentScale.Fit
-                            )
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Image(
+                                    painter = painterResource(id = context.resources.getIdentifier("a${userImage}", "drawable", context.packageName)),
+                                    contentDescription = "User avatar",
+                                    modifier = Modifier
+                                        .size(120.dp)
+                                        .clip(RoundedCornerShape(60.dp)),
+                                    contentScale = ContentScale.Fit
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    text = username,
+                                    style = MaterialTheme.typography.headlineSmall.copy(
+                                        fontWeight = FontWeight.Bold
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
 
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = username,
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+                        HorizontalDivider()
+
+                        if (!isEditing) {
+                            // Edit Profile Button
+                            Button(
+                                onClick = { isEditing = true },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 16.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF00B074)
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Chỉnh sửa",
+                                    modifier = Modifier.padding(end = 8.dp)
+                                )
+                                Text("Chỉnh sửa thông tin")
+                            }
+                        } else {
+                            // Scrollable Edit Profile Section
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .verticalScroll(scrollState)
+                                    .padding(vertical = 16.dp)
+                            ) {
+                                // Avatar Selection
+                                Text(
+                                    text = "Chọn hình ảnh",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                )
+                                
+                                LazyRow(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    items(12) { index ->
+                                        val imageNumber = index + 1
+                                        Box(
+                                            modifier = Modifier
+                                                .size(80.dp)
+                                                .clip(RoundedCornerShape(40.dp))
+                                                .border(
+                                                    width = 2.dp,
+                                                    color = if (userImage == imageNumber) Color(0xFF00B074) else Color.Gray,
+                                                    shape = RoundedCornerShape(40.dp)
+                                                )
+                                                .clickable { 
+                                                    userImage = imageNumber
+                                                    selectedAvatarIndex = index
+                                                }
+                                        ) {
+                                            Image(
+                                                painter = painterResource(id = context.resources.getIdentifier("a${imageNumber}", "drawable", context.packageName)),
+                                                contentDescription = "Avatar option",
+                                                modifier = Modifier.fillMaxSize(),
+                                                contentScale = ContentScale.Fit
+                                            )
+                                        }
+                                    }
+                                }
+
+                                // Username Field
+                                OutlinedTextField(
+                                    value = username,
+                                    onValueChange = { username = it },
+                                    label = { Text("Tên người dùng") },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 16.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = Color(0xFF00B074),
+                                        unfocusedBorderColor = Color(0xFF00B074)
+                                    )
+                                )
+
+                                // Current Password Field
+                                OutlinedTextField(
+                                    value = currentPassword,
+                                    onValueChange = { currentPassword = it },
+                                    label = { Text("Mật khẩu hiện tại (bắt buộc)") },
+                                    visualTransformation = if (showCurrentPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                                    trailingIcon = {
+                                        IconButton(onClick = { showCurrentPassword = !showCurrentPassword }) {
+                                            Icon(
+                                                imageVector = if (showCurrentPassword) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                                contentDescription = if (showCurrentPassword) "Ẩn mật khẩu" else "Hiện mật khẩu"
+                                            )
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 16.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = Color(0xFF00B074),
+                                        unfocusedBorderColor = Color(0xFF00B074)
+                                    )
+                                )
+
+                                // New Password Field
+                                OutlinedTextField(
+                                    value = newPassword,
+                                    onValueChange = { newPassword = it },
+                                    label = { Text("Mật khẩu mới (tùy chọn)") },
+                                    visualTransformation = if (showNewPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                                    trailingIcon = {
+                                        IconButton(onClick = { showNewPassword = !showNewPassword }) {
+                                            Icon(
+                                                imageVector = if (showNewPassword) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                                contentDescription = if (showNewPassword) "Ẩn mật khẩu" else "Hiện mật khẩu"
+                                            )
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 16.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = Color(0xFF00B074),
+                                        unfocusedBorderColor = Color(0xFF00B074)
+                                    )
+                                )
+
+                                // Save and Cancel Buttons
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Button(
+                                        onClick = {
+                                            // TODO: Implement save profile functionality
+                                            scope.launch {
+                                                snackbarHostState.showSnackbar(
+                                                    message = "Chức năng đang được phát triển",
+                                                    duration = SnackbarDuration.Short
+                                                )
+                                            }
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = Color(0xFF00B074)
+                                        )
+                                    ) {
+                                        Text("Lưu")
+                                    }
+                                    
+                                    Button(
+                                        onClick = { isEditing = false },
+                                        modifier = Modifier.weight(1f),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = Color.Gray
+                                        )
+                                    ) {
+                                        Text("Hủy")
+                                    }
+                                }
+                            }
                         }
                     }
 
-                    HorizontalDivider()
-
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    // Logout Button at bottom
+                    // Logout Button fixed at bottom
                     NavigationDrawerItem(
                         icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Đăng Xuất") },
                         label = { Text("Đăng Xuất") },
@@ -185,7 +376,9 @@ fun GameLobbyScreen(navController: NavController) {
                                 }
                             }
                         },
-                        modifier = Modifier.padding(horizontal = 12.dp)
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(16.dp)
                     )
                 }
             }
