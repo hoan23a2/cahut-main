@@ -12,6 +12,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import com.example.cahut.config.AppConfig
 import com.example.cahut.navigation.Screen
 import com.example.cahut.ui.screens.GameLobbyScreen
 import com.example.cahut.ui.screens.LoginScreen
@@ -28,6 +29,7 @@ import com.example.cahut.ui.theme.GameLobbyTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AppConfig.load(applicationContext)
         setContent {
             GameLobbyTheme {
                 Surface(

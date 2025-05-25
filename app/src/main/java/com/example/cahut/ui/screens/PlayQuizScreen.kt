@@ -53,6 +53,9 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.border
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.animation.core.tween
+import com.example.cahut.config.AppConfig
+import androidx.compose.ui.res.painterResource
+
 
 @Composable
 fun PlayQuizScreen(
@@ -339,8 +342,9 @@ fun PlayQuizScreen(
                                         containerColor = Color(0xFF23616A)
                                     )
                                 ) {
+                                    val baseUrl = AppConfig.getBaseUrl()
                                     Image(
-                                        painter = rememberAsyncImagePainter("https://cahut.onrender.com${question!!.imageUrl}"),
+                                        painter = rememberAsyncImagePainter("${baseUrl}${question!!.imageUrl}"),
                                         contentDescription = "Question image",
                                         modifier = Modifier.fillMaxSize(),
                                         contentScale = ContentScale.Fit
@@ -557,8 +561,9 @@ fun PlayQuizScreen(
                                         containerColor = Color(0xFF23616A)
                                     )
                                 ) {
+                                    val baseUrl = AppConfig.getBaseUrl()
                                     Image(
-                                        painter = rememberAsyncImagePainter("https://cahut.onrender.com${showResults!!.imageUrl}"),
+                                        painter = rememberAsyncImagePainter("${baseUrl}${showResults!!.imageUrl}"),
                                         contentDescription = "Question image",
                                         modifier = Modifier.fillMaxSize(),
                                         contentScale = ContentScale.Fit
@@ -755,21 +760,11 @@ fun PlayQuizScreen(
                                                 .border(2.dp, Color.Black, RoundedCornerShape(20.dp)),
                                             contentAlignment = Alignment.Center
                                         ) {
-                                            val avatarChar = entry.username.firstOrNull()?.uppercase() ?: "?"
-                                            Text(
-                                                text = avatarChar,
-                                                color = Color.Black,
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 22.sp,
-                                                style = LocalTextStyle.current.copy(
-                                                    drawStyle = androidx.compose.ui.graphics.drawscope.Stroke(width = 6f)
-                                                )
-                                            )
-                                            Text(
-                                                text = avatarChar,
-                                                color = Color.White,
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 22.sp
+                                            Image(
+                                                painter = painterResource(id = context.resources.getIdentifier("a${entry.userImage}", "drawable", context.packageName)),
+                                                contentDescription = "Player avatar",
+                                                modifier = Modifier.fillMaxSize(),
+                                                contentScale = ContentScale.Fit
                                             )
                                         }
                                         Spacer(modifier = Modifier.width(12.dp))

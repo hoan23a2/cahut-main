@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONObject
 import java.net.URISyntaxException
+import com.example.cahut.config.AppConfig
+
 
 class SocketService(private val context: Context) {
     private var socket: Socket? = null
@@ -61,7 +63,8 @@ class SocketService(private val context: Context) {
             val options = IO.Options().apply {
                 query = "token=$token"
             }
-            socket = IO.socket("https://cahut.onrender.com", options)
+            val baseUrl = AppConfig.getBaseUrl()
+            socket = IO.socket("${baseUrl}", options)
             
             socket?.on(Socket.EVENT_CONNECT) { _ ->
                 Log.d("SocketService", "Socket connected")
@@ -83,7 +86,8 @@ class SocketService(private val context: Context) {
                         val user = users.getJSONObject(i)
                         playersList.add(Player(
                             userId = user.getString("_id"),
-                            username = user.getString("username")
+                            username = user.getString("username"),
+                            userImage = user.optInt("userImage", 1)
                         ))
                     }
                     
@@ -173,7 +177,9 @@ class SocketService(private val context: Context) {
                                 id = entry.getString("id"),
                                 rank = entry.getInt("rank"),
                                 username = entry.getString("username"),
-                                score = entry.getInt("score")
+                                score = entry.getInt("score"),
+                                userImage = entry.optInt("userImage", 1),
+//                                isCorrectForLastQuestion = entry.optBoolean("isCorrectForLastQuestion", false)
                             )
                         }
                     _quizEvents.value = QuizEvent.ShowScores(leaderboard)
@@ -193,7 +199,9 @@ class SocketService(private val context: Context) {
                                 id = entry.getString("id"),
                                 rank = entry.getInt("rank"),
                                 username = entry.getString("username"),
-                                score = entry.getInt("score")
+                                score = entry.getInt("score"),
+                                userImage = entry.optInt("userImage", 1),
+//                                isCorrectForLastQuestion = entry.optBoolean("isCorrectForLastQuestion", false)
                             )
                         }
                     _quizEvents.value = QuizEvent.GameEnded(leaderboard)

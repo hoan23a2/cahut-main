@@ -24,4 +24,8 @@ object JwtUtils {
     fun getUsernameFromToken(token: String): String? {
         return decodeJwt(token)?.optString("username")
     }
+
+    fun getUserImageFromToken(token: String): Int {
+        return decodeJwt(token)?.optInt("userImage", 1) ?: 1
+    }
 }

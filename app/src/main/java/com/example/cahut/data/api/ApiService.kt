@@ -17,7 +17,8 @@ data class LoginRequest(
 
 data class LoginResponse(
     val token: String,
-    val message: String? = null
+    val message: String? = null,
+    val userImage: Int = 1
 )
 
 data class RegisterRequest(

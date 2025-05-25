@@ -45,6 +45,7 @@ import com.example.cahut.data.service.SocketService
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import android.util.Log
+import androidx.compose.ui.layout.ContentScale
 
 @Composable
 fun WaitingRoomScreen(
@@ -236,8 +237,15 @@ fun WaitingRoomScreen(
                                             .size(60.dp)
                                             .clip(CircleShape)
                                             .background(Color(0xFF00B074))
-                                            .padding(8.dp)
-                                    )
+//                                            .border(2.dp, Color.Black, CircleShape)
+                                    ) {
+                                        Image(
+                                            painter = painterResource(id = context.resources.getIdentifier("a${player.userImage}", "drawable", context.packageName)),
+                                            contentDescription = "Player avatar",
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentScale = ContentScale.Fit
+                                        )
+                                    }
                                     Text(
                                         text = player.username,
                                         color = Color.White,

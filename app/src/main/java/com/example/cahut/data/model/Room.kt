@@ -48,5 +48,6 @@ data class Room(
 
 data class Player(
     val userId: String,
-    val username: String
+    val username: String,
+    val userImage: Int = 1
 ) 

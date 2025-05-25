@@ -11,6 +11,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import com.example.cahut.config.AppConfig
 
 class AuthRepository(context: Context) {
     private val sharedPreferences: SharedPreferences = context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
@@ -25,9 +26,11 @@ class AuthRepository(context: Context) {
         val client = OkHttpClient.Builder()
             .addInterceptor(loggingInterceptor)
             .build()
-            
+
+        val baseUrl = AppConfig.getBaseUrl() // ✅ Lấy từ config
+
         Retrofit.Builder()
-            .baseUrl("https://cahut.onrender.com/")
+            .baseUrl(baseUrl)
             .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -42,6 +45,7 @@ class AuthRepository(context: Context) {
                     // Save token and userId
                     sharedPreferences.edit().apply {
                         putString("auth_token", loginResponse.token)
+                        putInt("user_image", loginResponse.userImage)
                         apply()
                     }
                     Result.success(loginResponse)
@@ -62,10 +66,15 @@ class AuthRepository(context: Context) {
         return sharedPreferences.getString("userId", null)
     }
     
+    fun getUserImage(): Int {
+        return sharedPreferences.getInt("user_image", 1)
+    }
+    
     fun clearToken() {
         sharedPreferences.edit().apply {
             remove("auth_token")
             remove("userId")
+            remove("user_image")
             apply()
         }
     }

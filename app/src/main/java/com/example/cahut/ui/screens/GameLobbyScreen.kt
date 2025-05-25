@@ -45,6 +45,12 @@ import androidx.compose.material.icons.filled.Login
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.BorderStroke
+import com.example.cahut.util.JwtUtils
+import com.example.cahut.config.AppConfig
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import coil.compose.rememberAsyncImagePainter
+import android.content.Context
 
 @Composable
 fun GameLobbyScreen(navController: NavController) {
@@ -58,6 +64,7 @@ fun GameLobbyScreen(navController: NavController) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val sharedPreferences = remember { context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE) }
     val examRepository = remember { ExamRepository(context) }
     val roomRepository = remember { RoomRepository(context) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -80,51 +87,65 @@ fun GameLobbyScreen(navController: NavController) {
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet {
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    "Menu",
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.titleLarge
-                )
-                HorizontalDivider()
-                NavigationDrawerItem(
-                    icon = { Icon(Icons.Default.Edit, contentDescription = "Chỉnh Sửa Hồ Sơ") },
-                    label = { Text("Chỉnh Sửa Hồ Sơ") },
-                    selected = false,
-                    onClick = { 
-                        scope.launch {
-                            drawerState.close()
-                            // Handle edit profile navigation
+                val token = sharedPreferences.getString("auth_token", "") ?: ""
+                val username = JwtUtils.getUsernameFromToken(token) ?: ""
+                val userImage = JwtUtils.getUserImageFromToken(token)
+                val baseUrl = AppConfig.getBaseUrl()
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    // Avatar and Username Section
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp)
+                            .padding(bottom = 16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Image(
+                                painter = painterResource(id = context.resources.getIdentifier("a${userImage}", "drawable", context.packageName)),
+                                contentDescription = "User avatar",
+                                modifier = Modifier
+                                    .size(80.dp)
+                                    .clip(RoundedCornerShape(40.dp)),
+                                contentScale = ContentScale.Fit
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = username,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
                         }
-                    },
-                    modifier = Modifier.padding(horizontal = 12.dp)
-                )
-                NavigationDrawerItem(
-                    icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Danh Sách Quiz") },
-                    label = { Text("Danh Sách Quiz") },
-                    selected = false,
-                    onClick = { 
-                        scope.launch {
-                            drawerState.close()
-                            // Handle quiz list navigation
-                        }
-                    },
-                    modifier = Modifier.padding(horizontal = 12.dp)
-                )
-                NavigationDrawerItem(
-                    icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Đăng Xuất") },
-                    label = { Text("Đăng Xuất") },
-                    selected = false,
-                    onClick = { 
-                        scope.launch {
-                            drawerState.close()
-                            navController.navigate(Screen.Login.route) {
-                                popUpTo(Screen.GameLobby.route) { inclusive = true }
+                    }
+
+                    HorizontalDivider()
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    // Logout Button at bottom
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Đăng Xuất") },
+                        label = { Text("Đăng Xuất") },
+                        selected = false,
+                        onClick = { 
+                            scope.launch {
+                                drawerState.close()
+                                navController.navigate(Screen.Login.route) {
+                                    popUpTo(Screen.GameLobby.route) { inclusive = true }
+                                }
                             }
-                        }
-                    },
-                    modifier = Modifier.padding(horizontal = 12.dp)
-                )
+                        },
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    )
+                }
             }
         }
     ) {

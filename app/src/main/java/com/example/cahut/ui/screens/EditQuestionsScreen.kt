@@ -24,6 +24,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.cahut.data.model.Question
 import com.example.cahut.data.repository.QuestionRepository
 import kotlinx.coroutines.launch
+import com.example.cahut.config.AppConfig
 
 @Composable
 fun EditQuestionsScreen(
@@ -109,6 +110,7 @@ fun EditQuestionsScreen(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            val baseUrl = AppConfig.getBaseUrl()
             items(questions) { question ->
                 QuestionItem(
                     question = question,
@@ -119,7 +121,7 @@ fun EditQuestionsScreen(
                         newCorrectAnswer = question.correctAnswer
                         newTimeLimit = question.timeLimit
                         newType = question.type
-                        selectedImageUri = question.imageUrl?.let { Uri.parse("https://cahut.onrender.com$it") }
+                        selectedImageUri = question.imageUrl?.let { Uri.parse("${baseUrl}$it") }
                         isNewImageSelected = false
                         showEditQuestionDialog = true
                     },
@@ -480,8 +482,9 @@ fun QuestionItem(
             Spacer(modifier = Modifier.height(8.dp))
             
             if (question.type == "image" && question.imageUrl != null) {
+                val baseUrl = AppConfig.getBaseUrl()
                 Image(
-                    painter = rememberAsyncImagePainter("https://cahut.onrender.com${question.imageUrl}"),
+                    painter = rememberAsyncImagePainter("${baseUrl}${question.imageUrl}"),
                     contentDescription = "Question image",
                     modifier = Modifier
                         .fillMaxWidth()
