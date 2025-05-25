@@ -59,11 +59,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.zIndex
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.zIndex
 
 
 @Composable
@@ -727,111 +727,166 @@ fun PlayQuizScreen(
                 showScores != null -> {
                     val topScores = showScores!!.sortedByDescending { it.score }.take(7)
                     Box(
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .fillMaxHeight(),
+                        contentAlignment = Alignment.Center
                     ) {
-                        // Confetti cho quán quân (đặt là con trực tiếp của Box chính)
-                        if (showTop3 && topScores.isNotEmpty()) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(60.dp)
-                                    .align(Alignment.TopCenter), // Sử dụng align trong Box chính
-                                contentAlignment = Alignment.TopCenter
-                            ) {
-                                Text(
-                                    "🎉🎉🎉",
-                                    fontSize = 36.sp,
-                                    modifier = Modifier.padding(top = 0.dp)
-                                )
-                            }
-                        }
-                        // Column chứa Top 3 và danh sách 4-7 (căn giữa dọc tổng thể)
-                        Column(
+                        LazyColumn(
                             modifier = Modifier
-                                .fillMaxSize() // Column này fill Box chính
-                                .padding(16.dp), // Thêm padding cho column chứa nội dung
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center // Căn giữa dọc
+                                .fillMaxWidth()
+                                .align(Alignment.Center),
+                            userScrollEnabled = false,
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            // Top 3
-                            androidx.compose.animation.AnimatedVisibility(
-                                visible = showTop3,
-                                enter = fadeIn() + scaleIn()
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(160.dp),
-                                    horizontalArrangement = Arrangement.SpaceAround,
-                                    verticalAlignment = Alignment.Bottom
-                                ) {
-                                    TopWinner(entry = topScores.getOrNull(1), rank = 2)
-                                    TopWinner(entry = topScores.getOrNull(0), rank = 1, isChampion = true)
-                                    TopWinner(entry = topScores.getOrNull(2), rank = 3)
+                            items(topScores, key = { it.id }) { entry ->
+                                val idx = topScores.indexOf(entry)
+                                var startAnimation by remember { mutableStateOf(false) }
+                                
+                                LaunchedEffect(Unit) {
+                                    delay(500)
+                                    startAnimation = true
                                 }
-                            }
-                            // Thêm Spacer giữa Top 3 và danh sách 4-7
-                            if (showTop3 && topScores.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(48.dp))
-                            }
-                            // Danh sách 4-7 (không còn dòng 1-3 chỉ số thứ tự)
-                            if (topScores.isNotEmpty()) {
-                                androidx.compose.animation.AnimatedVisibility(
-                                    visible = showRest,
-                                    enter = fadeIn() + scaleIn()
-                                ) {
-                                    Column(
-                                        modifier = Modifier.fillMaxWidth(), // Column này fill Column cha
-                                        horizontalAlignment = Alignment.CenterHorizontally
+
+                                val progress by animateFloatAsState(
+                                    targetValue = if (startAnimation) 1f else 0f,
+                                    animationSpec = tween(
+                                        durationMillis = 500,
+                                        easing = androidx.compose.animation.core.LinearEasing
+                                    ),
+                                    label = "progress"
+                                )
+
+                                val targetColor = when (entry.isCorrectForLastQuestion) {
+                                    true -> Color(0xFFc6ea84) // Xanh lá cho đúng
+                                    else -> Color(0xFFffa7a0) // Đỏ cho sai hoặc không trả lời
+                                }
+
+                                val initialColor = Color(0xFFffc679) // Màu vàng ban đầu
+                                val intermediateColor = Color(0xFFffe4b3) // Màu trung gian
+
+                                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                    Row(
+                                        modifier = Modifier
+                                            .widthIn(max = 420.dp)
+                                            .padding(vertical = 6.dp)
+                                            .background(
+                                                color = if (startAnimation) {
+                                                    if (progress < 0.5f) {
+                                                        lerp(initialColor, intermediateColor, progress * 2)
+                                                    } else {
+                                                        lerp(intermediateColor, targetColor, (progress - 0.5f) * 2)
+                                                    }
+                                                } else initialColor,
+                                                shape = RoundedCornerShape(24.dp)
+                                            )
+                                            .border(2.dp, Color.Black, RoundedCornerShape(24.dp))
+                                            .animateItemPlacement(
+                                                animationSpec = tween(durationMillis = 200)
+                                            ),
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        topScores.forEach { entry ->
-                                            Row(
+                                        // Số thứ tự
+                                        Box(modifier = Modifier.width(32.dp), contentAlignment = Alignment.Center) {
+                                            Text(
+                                                text = "${idx + 1}",
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color.Black,
+                                                fontSize = 20.sp,
+                                                style = LocalTextStyle.current.copy(
+                                                    drawStyle = androidx.compose.ui.graphics.drawscope.Stroke(width = 6f)
+                                                ),
+                                                textAlign = TextAlign.Center
+                                            )
+                                            Text(
+                                                text = "${idx + 1}",
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color.White,
+                                                fontSize = 20.sp,
+                                                textAlign = TextAlign.Center
+                                            )
+                                        }
+                                        // Avatar ký tự đầu
+                                        Box(
+                                            modifier = Modifier
+                                                .size(40.dp)
+                                                .clip(RoundedCornerShape(20.dp))
+                                                .background(Color(0xFFFFE49E))
+                                                .border(2.dp, Color.Black, RoundedCornerShape(20.dp)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Image(
+                                                painter = painterResource(id = context.resources.getIdentifier("a${entry.userImage}", "drawable", context.packageName)),
+                                                contentDescription = "Player avatar",
+                                                modifier = Modifier.fillMaxSize(),
+                                                contentScale = ContentScale.Fit
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        // Tên và nhãn host
+                                        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                                            Text(
+                                                text = entry.username,
+                                                color = Color.Black,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 18.sp,
+                                                style = LocalTextStyle.current.copy(
+                                                    drawStyle = androidx.compose.ui.graphics.drawscope.Stroke(width = 6f)
+                                                )
+                                            )
+                                            Text(
+                                                text = entry.username,
+                                                color = Color.White,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 18.sp
+                                            )
+                                        }
+                                        if (entry.rank == 1) {
+                                            Box(
                                                 modifier = Modifier
-                                                    .widthIn(max = 420.dp)
-                                                    .padding(vertical = 6.dp)
-                                                    .background(Color(0xFFffc679), RoundedCornerShape(24.dp))
-                                                    .border(2.dp, Color.Black, RoundedCornerShape(24.dp)),
-                                                verticalAlignment = Alignment.CenterVertically
+                                                    .background(Color(0xFFFFE49E), RoundedCornerShape(8.dp))
+                                                    .border(2.dp, Color.Black, RoundedCornerShape(8.dp))
+                                                    .padding(horizontal = 8.dp, vertical = 2.dp),
+                                                contentAlignment = Alignment.Center
                                             ) {
                                                 Text(
-                                                    text = "${entry.rank}",
-                                                    fontWeight = FontWeight.Bold,
+                                                    text = "HOST",
                                                     color = Color.Black,
-                                                    fontSize = 20.sp,
-                                                    modifier = Modifier.padding(start = 24.dp, end = 16.dp)
-                                                )
-                                                // Avatar
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(40.dp)
-                                                        .clip(RoundedCornerShape(20.dp))
-                                                        .background(Color(0xFFFFE49E))
-                                                        .border(2.dp, Color.Black, RoundedCornerShape(20.dp)),
-                                                    contentAlignment = Alignment.Center
-                                                ) {
-                                                    Image(
-                                                        painter = painterResource(id = LocalContext.current.resources.getIdentifier("a${entry.userImage}", "drawable", LocalContext.current.packageName)),
-                                                        contentDescription = "Player avatar",
-                                                        modifier = Modifier.fillMaxSize(),
-                                                        contentScale = ContentScale.Fit
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 12.sp,
+                                                    style = LocalTextStyle.current.copy(
+                                                        drawStyle = androidx.compose.ui.graphics.drawscope.Stroke(width = 6f)
                                                     )
-                                                }
-                                                Spacer(modifier = Modifier.width(12.dp))
-                                                Text(
-                                                    text = entry.username,
-                                                    color = Color.Black,
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 18.sp
                                                 )
-                                                Spacer(modifier = Modifier.weight(1f))
                                                 Text(
-                                                    text = "${entry.score}",
-                                                    color = Color.Black,
+                                                    text = "HOST",
+                                                    color = Color.White,
                                                     fontWeight = FontWeight.Bold,
-                                                    fontSize = 20.sp,
-                                                    modifier = Modifier.padding(end = 24.dp)
+                                                    fontSize = 12.sp
                                                 )
                                             }
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                        }
+                                        // Điểm
+                                        Box(modifier = Modifier.width(80.dp)
+                                            .padding(end = 8.dp), contentAlignment = Alignment.CenterEnd) {
+                                            Text(
+                                                text = "${entry.score}",
+                                                color = Color.Black,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 20.sp,
+                                                style = LocalTextStyle.current.copy(
+                                                    drawStyle = androidx.compose.ui.graphics.drawscope.Stroke(width = 6f)
+                                                ),
+                                                textAlign = TextAlign.End
+                                            )
+                                            Text(
+                                                text = "${entry.score}",
+                                                color = Color.White,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 20.sp,
+                                                textAlign = TextAlign.End
+                                            )
                                         }
                                     }
                                 }
@@ -844,15 +899,17 @@ fun PlayQuizScreen(
                     val top3 = sorted.take(3)
                     val rest = if (sorted.size > 3) sorted.drop(3).take(4) else emptyList()
                     Box(
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.TopCenter
                     ) {
-                        // Confetti cho quán quân (đặt là con trực tiếp của Box chính)
+                        // Confetti cho quán quân
                         if (showTop3 && top3.isNotEmpty()) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(60.dp)
-                                    .align(Alignment.TopCenter), // Sử dụng align trong Box chính
+                                    .align(Alignment.TopCenter)
+                                    .padding(top = 16.dp),
                                 contentAlignment = Alignment.TopCenter
                             ) {
                                 Text(
@@ -862,13 +919,13 @@ fun PlayQuizScreen(
                                 )
                             }
                         }
-                        // Column chứa Top 3 và danh sách 4-7 (căn giữa dọc tổng thể)
+                        // Column chứa Top 3 và danh sách 4-7
                         Column(
                             modifier = Modifier
-                                .fillMaxSize() // Column này fill Box chính
-                                .padding(16.dp), // Thêm padding cho column chứa nội dung
+                                .fillMaxSize()
+                                .padding(16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center // Căn giữa dọc
+                            verticalArrangement = Arrangement.Center
                         ) {
                             // Top 3
                             androidx.compose.animation.AnimatedVisibility(
@@ -878,18 +935,15 @@ fun PlayQuizScreen(
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
+                                        .padding(top = 16.dp)
                                         .height(160.dp),
-                                    horizontalArrangement = Arrangement.SpaceAround,
-                                    verticalAlignment = Alignment.Bottom
+                                    horizontalArrangement = Arrangement.SpaceEvenly,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     TopWinner(entry = top3.getOrNull(1), rank = 2)
                                     TopWinner(entry = top3.getOrNull(0), rank = 1, isChampion = true)
                                     TopWinner(entry = top3.getOrNull(2), rank = 3)
                                 }
-                            }
-                            // Thêm Spacer giữa Top 3 và danh sách 4-7
-                            if (showTop3 && rest.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(48.dp))
                             }
                             // Danh sách 4-7 (không còn dòng 1-3 chỉ số thứ tự)
                             if (rest.isNotEmpty()) {
@@ -898,7 +952,9 @@ fun PlayQuizScreen(
                                     enter = fadeIn() + scaleIn()
                                 ) {
                                     Column(
-                                        modifier = Modifier.fillMaxWidth(), // Column này fill Column cha
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(top = 32.dp),
                                         horizontalAlignment = Alignment.CenterHorizontally
                                     ) {
                                         rest.forEach { entry ->
@@ -906,7 +962,7 @@ fun PlayQuizScreen(
                                                 modifier = Modifier
                                                     .widthIn(max = 420.dp)
                                                     .padding(vertical = 6.dp)
-                                                    .background(Color(0xFFffc679), RoundedCornerShape(24.dp))
+                                                    .background(Color(0xFFFFC679), RoundedCornerShape(24.dp))
                                                     .border(2.dp, Color.Black, RoundedCornerShape(24.dp)),
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
@@ -985,6 +1041,7 @@ fun PlayQuizScreen(
 
 @Composable
 fun TopWinner(entry: LeaderboardEntry?, rank: Int, isChampion: Boolean = false) {
+    val context = LocalContext.current
     if (entry == null) return
     val medalIcons = mapOf(
         1 to "\uD83E\uDD47", // 🥇
@@ -992,11 +1049,11 @@ fun TopWinner(entry: LeaderboardEntry?, rank: Int, isChampion: Boolean = false) 
         3 to "\uD83E\uDD49"  // 🥉
     )
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally, // Căn giữa nội dung bên trong cột
-        modifier = Modifier.width(IntrinsicSize.Min) // Giúp cột chỉ chiếm đủ chiều rộng cần thiết
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.width(IntrinsicSize.Min)
     ) {
         // Tên (trắng, viền đen, trên avatar)
-        Box(modifier = Modifier.padding(bottom = 4.dp).fillMaxWidth(), contentAlignment = Alignment.Center) { // FillMaxWidth và căn giữa ngang
+        Box(modifier = Modifier.padding(bottom = 4.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
             Text(
                 text = entry.username,
                 color = Color.Black,
@@ -1016,40 +1073,40 @@ fun TopWinner(entry: LeaderboardEntry?, rank: Int, isChampion: Boolean = false) 
             )
         }
         // Container chứa Avatar và Huy chương
-        Box { // Box này chứa cả avatar và huy chương để định vị tương đối
-             // Avatar hình tròn đầy đủ
+        Box {
+            // Avatar hình tròn đầy đủ
             Box(
                 modifier = Modifier
                     .size(if (isChampion) 90.dp else 70.dp)
                     .clip(CircleShape)
-                    .background(Color.White)
+                    .background(Color(0xFF00B074))
                     .border(3.dp, Color.Black, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Image(
-                    painter = painterResource(id = LocalContext.current.resources.getIdentifier("a${entry.userImage}", "drawable", LocalContext.current.packageName)),
+                    painter = painterResource(id = context.resources.getIdentifier("a${entry.userImage}", "drawable", context.packageName)),
                     contentDescription = "Player avatar",
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Fit
                 )
             }
             // Huy chương ở góc dưới trái, nằm ngoài vòng tròn avatar
             Box(
                 modifier = Modifier
-                    .size(32.dp) // Kích thước huy chương
-                    .align(Alignment.BottomStart) // Căn góc dưới trái của Box container
-                    .offset(x = (-12).dp, y = 12.dp) // Offset ra ngoài và xuống dưới
-                    .zIndex(1f), // Đảm bảo nổi lên trên
+                    .size(32.dp)
+                    .align(Alignment.BottomStart)
+                    .offset(x = (-12).dp, y = 12.dp)
+                    .zIndex(1f),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = medalIcons[rank] ?: "",
-                    fontSize = 20.sp // Kích thước font huy chương
+                    fontSize = 20.sp
                 )
             }
         }
         // Điểm (trắng, viền đen, dưới avatar)
-        Box(modifier = Modifier.padding(top = 4.dp).fillMaxWidth(), contentAlignment = Alignment.Center) { // FillMaxWidth và căn giữa ngang
+        Box(modifier = Modifier.padding(top = 4.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
             Text(
                 text = "${entry.score}",
                 color = Color.Black,
