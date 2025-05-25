@@ -257,25 +257,6 @@ fun WaitingRoomScreen(
                         }
                     }
 
-                    Button(
-                        onClick = { /* Handle edit character */ },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF2D7C85)
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Chỉnh sửa",
-                            tint = Color.White
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Chỉnh sửa nhân vật",
-                            color = Color.White
-                        )
-                    }
-
                     Spacer(modifier = Modifier.height(16.dp))
 
                     if (isCreator) {

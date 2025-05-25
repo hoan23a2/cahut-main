@@ -1,0 +1,19 @@
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(200.dp)
+                                        .padding(horizontal = 16.dp),
+                                    contentAlignment = Alignment.BottomCenter
+                                ) {
+                                    Box(modifier = Modifier.align(Alignment.BottomStart).offset(x = 16.dp)) {
+                                         TopWinner(entry = top3.getOrNull(1), rank = 2)
+                                    }
+                                    Box(modifier = Modifier.align(Alignment.BottomCenter).offset(y = (-40).dp)) {
+                                        TopWinner(entry = top3.getOrNull(0), rank = 1, isChampion = true)
+                                    }
+                                    Box(modifier = Modifier.align(Alignment.BottomEnd).offset(x = (-16).dp)) {
+                                         TopWinner(entry = top3.getOrNull(2), rank = 3)
+                                    }
+                                }
+                            } 
