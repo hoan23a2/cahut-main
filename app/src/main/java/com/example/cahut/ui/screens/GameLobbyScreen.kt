@@ -196,8 +196,8 @@ fun GameLobbyScreen(navController: NavController) {
                                         .clip(RoundedCornerShape(60.dp)),
                                     contentScale = ContentScale.Fit
                                 )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Text(
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
                                     text = username,
                                     style = MaterialTheme.typography.headlineSmall.copy(
                                         fontWeight = FontWeight.Bold
@@ -207,7 +207,7 @@ fun GameLobbyScreen(navController: NavController) {
                             }
                         }
 
-                        HorizontalDivider()
+                HorizontalDivider()
 
                         if (!isEditing) {
                             // Edit Profile Button
@@ -285,7 +285,7 @@ fun GameLobbyScreen(navController: NavController) {
                                     colors = OutlinedTextFieldDefaults.colors(
                                         focusedBorderColor = Color(0xFF00B074),
                                         unfocusedBorderColor = Color(0xFF00B074)
-                                    )
+                )
                                 )
 
                                 // Current Password Field
@@ -342,9 +342,9 @@ fun GameLobbyScreen(navController: NavController) {
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     Button(
-                                        onClick = {
+                    onClick = { 
                                             if (currentPassword.isBlank()) {
-                                                scope.launch {
+                        scope.launch {
                                                     snackbarHostState.showSnackbar(
                                                         message = "Vui lòng nhập mật khẩu hiện tại để xác nhận!",
                                                         duration = SnackbarDuration.Short
@@ -397,7 +397,7 @@ fun GameLobbyScreen(navController: NavController) {
                                                     )
                                                 }
                                             }
-                                        },
+                    },
                                         modifier = Modifier.weight(1f),
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = Color(0xFF00B074)
@@ -421,22 +421,22 @@ fun GameLobbyScreen(navController: NavController) {
                     }
 
                     // Logout Button fixed at bottom
-                    NavigationDrawerItem(
-                        icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Đăng Xuất") },
-                        label = { Text("Đăng Xuất") },
-                        selected = false,
-                        onClick = { 
-                            scope.launch {
-                                drawerState.close()
-                                navController.navigate(Screen.Login.route) {
-                                    popUpTo(Screen.GameLobby.route) { inclusive = true }
-                                }
+                NavigationDrawerItem(
+                    icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Đăng Xuất") },
+                    label = { Text("Đăng Xuất") },
+                    selected = false,
+                    onClick = { 
+                        scope.launch {
+                            drawerState.close()
+                            navController.navigate(Screen.Login.route) {
+                                popUpTo(Screen.GameLobby.route) { inclusive = true }
                             }
-                        },
+                        }
+                    },
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .padding(16.dp)
-                    )
+                )
                 }
             }
         }

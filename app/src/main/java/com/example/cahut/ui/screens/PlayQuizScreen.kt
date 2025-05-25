@@ -128,38 +128,29 @@ fun PlayQuizScreen(
             val totalTimeLimit = currentQuestion.timeLimit
             val totalMs = currentQuestion.timeLimit * 1000L
             val startTime = System.currentTimeMillis()
-            
-            try {
-                while (true) {
-                    val elapsed = System.currentTimeMillis() - startTime
-                    val left = (totalMs - elapsed).coerceAtLeast(0L)
-                    timeLeftMs = left
-                    val newTimeLeft = (left / 1000).toInt()
-                    if (newTimeLeft != timeLeft) {
-                        timeLeft = newTimeLeft
-                    }
-                    if (left <= 0L) {
-                        break
-                    }
-                    delay(100) // Update every 100ms instead of 16ms
+            var running = true
+            while (running) {
+                val elapsed = System.currentTimeMillis() - startTime
+                val left = (totalMs - elapsed).coerceAtLeast(0L)
+                timeLeftMs = left
+                val newTimeLeft = (left / 1000).toInt()
+                if (newTimeLeft != timeLeft) {
+                    timeLeft = newTimeLeft
                 }
-                
-                // Only submit answer and time up if we haven't already
-                if (!hasAnswered) {
-                    socketService.submitAnswer(roomId, "", 0)
-                    socketService.timeUp(roomId)
+                if (left <= 0L) {
+                    running = false
+                    if (!hasAnswered) {
+                        socketService.submitAnswer(roomId, "", 0)
+                    }
+                    if(isHost){
+                        val token = sharedPreferences.getString("auth_token", "") ?: return@LaunchedEffect
+                        socketService.timeUp(roomId, token)
+                    }
+                } else {
+                    delay(16)
                 }
-            } catch (e: Exception) {
-                Log.e("PlayQuizScreen", "Timer error", e)
             }
-        }
-    }
-
-    // Add a separate effect to handle time-up events
-    LaunchedEffect(timeLeft) {
-        if (timeLeft == 0 && question != null && !hasAnswered) {
-            socketService.submitAnswer(roomId, "", 0)
-            socketService.timeUp(roomId)
+            timeLeft = 0
         }
     }
 
@@ -304,7 +295,10 @@ fun PlayQuizScreen(
                     }
                     if (isHost && question != null && showResults == null) {
                         IconButton(
-                            onClick = { socketService.timeUp(roomId) },
+                            onClick = { 
+                                val token = sharedPreferences.getString("auth_token", "") ?: return@IconButton
+                                socketService.timeUp(roomId, token)
+                            },
                             modifier = Modifier.size(32.dp)
                         ) {
                             Icon(

@@ -270,10 +270,11 @@ class SocketService(private val context: Context) {
         })
     }
 
-    fun timeUp(roomId: String) {
+    fun timeUp(roomId: String, token: String) {
         Log.d("SocketService", "Time up for room: $roomId")
         socket?.emit("time-up", JSONObject().apply {
             put("roomId", roomId)
+            put("token", token)
         })
     }
     
