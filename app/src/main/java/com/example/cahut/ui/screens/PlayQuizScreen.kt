@@ -925,94 +925,156 @@ fun PlayQuizScreen(
                                 )
                             }
                         }
-                        // Column chứa Top 3 và danh sách 4-7
+
+                        // Main content
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            // Top 3
-                            androidx.compose.animation.AnimatedVisibility(
-                                visible = showTop3,
-                                enter = fadeIn() + scaleIn()
+                            // Content container with fixed height
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth(),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 16.dp)
-                                        .height(160.dp),
-                                    horizontalArrangement = Arrangement.SpaceEvenly,
-                                    verticalAlignment = Alignment.CenterVertically
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
                                 ) {
-                                    TopWinner(entry = top3.getOrNull(1), rank = 2)
-                                    TopWinner(entry = top3.getOrNull(0), rank = 1, isChampion = true)
-                                    TopWinner(entry = top3.getOrNull(2), rank = 3)
-                                }
-                            }
-                            // Danh sách 4-7 (không còn dòng 1-3 chỉ số thứ tự)
-                            if (rest.isNotEmpty()) {
-                                androidx.compose.animation.AnimatedVisibility(
-                                    visible = showRest,
-                                    enter = fadeIn() + scaleIn()
-                                ) {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(top = 32.dp),
-                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    // Top 3
+                                    androidx.compose.animation.AnimatedVisibility(
+                                        visible = showTop3,
+                                        enter = fadeIn() + scaleIn()
                                     ) {
-                                        rest.forEach { entry ->
-                                            Row(
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(top = 16.dp)
+                                                .height(160.dp),
+                                            horizontalArrangement = Arrangement.SpaceEvenly,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            TopWinner(entry = top3.getOrNull(1), rank = 2)
+                                            TopWinner(entry = top3.getOrNull(0), rank = 1, isChampion = true)
+                                            TopWinner(entry = top3.getOrNull(2), rank = 3)
+                                        }
+                                    }
+                                    // Danh sách 4-7
+                                    if (rest.isNotEmpty()) {
+                                        androidx.compose.animation.AnimatedVisibility(
+                                            visible = showRest,
+                                            enter = fadeIn() + scaleIn()
+                                        ) {
+                                            Column(
                                                 modifier = Modifier
-                                                    .widthIn(max = 420.dp)
-                                                    .padding(vertical = 6.dp)
-                                                    .background(Color(0xFFFFC679), RoundedCornerShape(24.dp))
-                                                    .border(2.dp, Color.Black, RoundedCornerShape(24.dp)),
-                                                verticalAlignment = Alignment.CenterVertically
+                                                    .fillMaxWidth()
+                                                    .padding(top = 32.dp),
+                                                horizontalAlignment = Alignment.CenterHorizontally
                                             ) {
-                                                Text(
-                                                    text = "${entry.rank}",
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = Color.Black,
-                                                    fontSize = 20.sp,
-                                                    modifier = Modifier.padding(start = 24.dp, end = 16.dp)
-                                                )
-                                                // Avatar
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(40.dp)
-                                                        .clip(RoundedCornerShape(20.dp))
-                                                        .background(Color(0xFFFFE49E))
-                                                        .border(2.dp, Color.Black, RoundedCornerShape(20.dp)),
-                                                    contentAlignment = Alignment.Center
-                                                ) {
-                                                    Image(
-                                                        painter = painterResource(id = LocalContext.current.resources.getIdentifier("a${entry.userImage}", "drawable", LocalContext.current.packageName)),
-                                                        contentDescription = "Player avatar",
-                                                        modifier = Modifier.fillMaxSize(),
-                                                        contentScale = ContentScale.Fit
-                                                    )
+                                                rest.forEach { entry ->
+                                                    Row(
+                                                        modifier = Modifier
+                                                            .widthIn(max = 420.dp)
+                                                            .padding(vertical = 6.dp)
+                                                            .background(Color(0xFFFFC679), RoundedCornerShape(24.dp))
+                                                            .border(2.dp, Color.Black, RoundedCornerShape(24.dp)),
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        Text(
+                                                            text = "${entry.rank}",
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = Color.Black,
+                                                            fontSize = 20.sp,
+                                                            modifier = Modifier.padding(start = 24.dp, end = 16.dp)
+                                                        )
+                                                        // Avatar
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .size(40.dp)
+                                                                .clip(RoundedCornerShape(20.dp))
+                                                                .background(Color(0xFFFFE49E))
+                                                                .border(2.dp, Color.Black, RoundedCornerShape(20.dp)),
+                                                            contentAlignment = Alignment.Center
+                                                        ) {
+                                                            Image(
+                                                                painter = painterResource(id = LocalContext.current.resources.getIdentifier("a${entry.userImage}", "drawable", LocalContext.current.packageName)),
+                                                                contentDescription = "Player avatar",
+                                                                modifier = Modifier.fillMaxSize(),
+                                                                contentScale = ContentScale.Fit
+                                                            )
+                                                        }
+                                                        Spacer(modifier = Modifier.width(12.dp))
+                                                        Text(
+                                                            text = entry.username,
+                                                            color = Color.Black,
+                                                            fontWeight = FontWeight.Bold,
+                                                            fontSize = 18.sp
+                                                        )
+                                                        Spacer(modifier = Modifier.weight(1f))
+                                                        Text(
+                                                            text = "${entry.score}",
+                                                            color = Color.Black,
+                                                            fontWeight = FontWeight.Bold,
+                                                            fontSize = 20.sp,
+                                                            modifier = Modifier.padding(end = 24.dp)
+                                                        )
+                                                    }
                                                 }
-                                                Spacer(modifier = Modifier.width(12.dp))
-                                                Text(
-                                                    text = entry.username,
-                                                    color = Color.Black,
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 18.sp
-                                                )
-                                                Spacer(modifier = Modifier.weight(1f))
-                                                Text(
-                                                    text = "${entry.score}",
-                                                    color = Color.Black,
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 20.sp,
-                                                    modifier = Modifier.padding(end = 24.dp)
-                                                )
                                             }
                                         }
                                     }
+                                }
+                            }
+
+                            // Bottom buttons
+                            if (isHost) {
+                                Button(
+                                    onClick = {
+                                        socketService.deleteRoom(roomId)
+                                        navController.navigate(Screen.GameLobby.route) {
+                                            popUpTo(Screen.PlayQuiz.route) { inclusive = true }
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFFFF5252)
+                                    ),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 32.dp, vertical = 16.dp),
+                                    shape = RoundedCornerShape(24.dp)
+                                ) {
+                                    Text(
+                                        text = "Xóa phòng",
+                                        color = Color.White,
+                                        modifier = Modifier.padding(vertical = 8.dp),
+                                        fontSize = 18.sp
+                                    )
+                                }
+                            } else {
+                                Button(
+                                    onClick = {
+                                        socketService.leaveRoom(roomId)
+                                        navController.navigate(Screen.GameLobby.route) {
+                                            popUpTo(Screen.PlayQuiz.route) { inclusive = true }
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF00B074)
+                                    ),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 32.dp, vertical = 16.dp),
+                                    shape = RoundedCornerShape(24.dp)
+                                ) {
+                                    Text(
+                                        text = "Thoát phòng",
+                                        color = Color.White,
+                                        modifier = Modifier.padding(vertical = 8.dp),
+                                        fontSize = 18.sp
+                                    )
                                 }
                             }
                         }
