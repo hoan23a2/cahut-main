@@ -27,7 +27,7 @@ class AuthRepository(context: Context) {
             .build()
             
         Retrofit.Builder()
-            .baseUrl("https://cahut.onrender.com/")
+            .baseUrl("https://cahut-be.onrender.com/")
             .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()

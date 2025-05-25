@@ -7,7 +7,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
-    private const val BASE_URL = "https://cahut.onrender.com/"
+    private const val BASE_URL = "https://cahut-be.onrender.com/"
     
     fun createService(context: Context): ApiService {
         val loggingInterceptor = HttpLoggingInterceptor().apply {

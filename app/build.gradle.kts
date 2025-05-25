@@ -39,6 +39,12 @@ android {
     }
 }
 
+repositories {
+    mavenCentral()
+    maven { url = uri("https://jitpack.io") }
+    google()
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -66,9 +72,10 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
     
     // QR Code
-    implementation("com.github.kenglxn.QRGen:android:3.0.1")
     implementation("com.google.zxing:core:3.5.2")
-    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
+    implementation("com.github.journeyapps:zxing-android-embedded:4.3.0") {
+        isTransitive = false
+    }
     implementation("androidx.compose.material:material-icons-extended:1.5.4")
 
     testImplementation(libs.junit)

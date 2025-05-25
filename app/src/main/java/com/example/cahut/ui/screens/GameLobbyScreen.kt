@@ -45,6 +45,15 @@ import androidx.compose.material.icons.filled.Login
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.material.icons.filled.QrCodeScanner
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import android.content.Intent
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 
 @Composable
 fun GameLobbyScreen(navController: NavController) {
@@ -55,6 +64,8 @@ fun GameLobbyScreen(navController: NavController) {
     var showCreateRoomDialog by remember { mutableStateOf(false) }
     var selectedExam by remember { mutableStateOf<Exam?>(null) }
     var newExamName by remember { mutableStateOf("") }
+    var showJoinRoomDialog by remember { mutableStateOf(false) }
+    var scannedRoomId by remember { mutableStateOf("") }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -62,6 +73,37 @@ fun GameLobbyScreen(navController: NavController) {
     val roomRepository = remember { RoomRepository(context) }
     val snackbarHostState = remember { SnackbarHostState() }
     var isPinError by remember { mutableStateOf(false) }
+
+    // QR code scanner result launcher
+    val qrScannerLauncher = rememberLauncherForActivityResult(
+        contract = StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            val contents = result.data?.getStringExtra("SCAN_RESULT")
+            if (contents != null) {
+                scannedRoomId = contents
+                showJoinRoomDialog = true
+            }
+        }
+    }
+
+    // Camera permission launcher
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            val intent = Intent("com.google.zxing.client.android.SCAN")
+            intent.putExtra("SCAN_MODE", "QR_CODE_MODE")
+            qrScannerLauncher.launch(intent)
+        } else {
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    message = "Cần quyền truy cập camera để quét mã QR",
+                    duration = SnackbarDuration.Short
+                )
+            }
+        }
+    }
 
     LaunchedEffect(Unit) {
         try {
@@ -134,7 +176,7 @@ fun GameLobbyScreen(navController: NavController) {
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Header with Avatar
+            // Header with Avatar and QR Scanner
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -148,6 +190,29 @@ fun GameLobbyScreen(navController: NavController) {
                     modifier = Modifier
                         .size(40.dp)
                         .clickable { scope.launch { drawerState.open() } },
+                    tint = MaterialTheme.colorScheme.onBackground
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = Icons.Default.QrCodeScanner,
+                    contentDescription = "Quét mã QR",
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clickable {
+                            when {
+                                ContextCompat.checkSelfPermission(
+                                    context,
+                                    Manifest.permission.CAMERA
+                                ) == PackageManager.PERMISSION_GRANTED -> {
+                                    val intent = Intent("com.google.zxing.client.android.SCAN")
+                                    intent.putExtra("SCAN_MODE", "QR_CODE_MODE")
+                                    qrScannerLauncher.launch(intent)
+                                }
+                                else -> {
+                                    cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                }
+                            }
+                        },
                     tint = MaterialTheme.colorScheme.onBackground
                 )
                 Spacer(modifier = Modifier.weight(1f))
@@ -621,6 +686,66 @@ fun GameLobbyScreen(navController: NavController) {
             confirmButton = {},
             dismissButton = {
                 TextButton(onClick = { showCreateRoomDialog = false }) {
+                    Text("Hủy", color = Color(0xFF00B074))
+                }
+            },
+            containerColor = Color(0xFFd1fccf)
+        )
+    }
+
+    // Join Room Dialog
+    if (showJoinRoomDialog) {
+        AlertDialog(
+            onDismissRequest = { 
+                showJoinRoomDialog = false
+                scannedRoomId = ""
+            },
+            title = { 
+                Text(
+                    "Tham gia phòng",
+                    color = Color(0xFF00B074)
+                ) 
+            },
+            text = {
+                Text(
+                    text = "Bạn có muốn tham gia phòng với mã: $scannedRoomId?",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            try {
+                                val room = roomRepository.joinRoom(scannedRoomId)
+                                showJoinRoomDialog = false
+                                navController.navigate(Screen.WaitingRoom.createRoute(
+                                    roomId = room.roomId,
+                                    examId = room.examId,
+                                    isHost = false
+                                ))
+                            } catch (e: Exception) {
+                                snackbarHostState.showSnackbar(
+                                    message = "Lỗi khi tham gia phòng: ${e.message}",
+                                    duration = SnackbarDuration.Short
+                                )
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF00B074)
+                    )
+                ) {
+                    Text("Tham gia", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { 
+                        showJoinRoomDialog = false
+                        scannedRoomId = ""
+                    }
+                ) {
                     Text("Hủy", color = Color(0xFF00B074))
                 }
             },
