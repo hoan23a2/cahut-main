@@ -5,7 +5,7 @@ import android.content.SharedPreferences
 import android.util.Log
 import com.example.cahut.data.model.Player
 import com.example.cahut.data.model.PlayingQuestion
-import com.example.cahut.data.model.LeaderboardEntry
+import LeaderboardEntry
 import com.example.cahut.util.JwtUtils
 import io.socket.client.IO
 import io.socket.client.Socket
@@ -178,8 +178,7 @@ class SocketService(private val context: Context) {
                                 rank = entry.getInt("rank"),
                                 username = entry.getString("username"),
                                 score = entry.getInt("score"),
-                                userImage = entry.optInt("userImage", 1),
-//                                isCorrectForLastQuestion = entry.optBoolean("isCorrectForLastQuestion", false)
+                                isCorrectForLastQuestion = if (entry.has("isCorrectForLastQuestion")) entry.getBoolean("isCorrectForLastQuestion") else null
                             )
                         }
                     _quizEvents.value = QuizEvent.ShowScores(leaderboard)
@@ -200,8 +199,7 @@ class SocketService(private val context: Context) {
                                 rank = entry.getInt("rank"),
                                 username = entry.getString("username"),
                                 score = entry.getInt("score"),
-                                userImage = entry.optInt("userImage", 1),
-//                                isCorrectForLastQuestion = entry.optBoolean("isCorrectForLastQuestion", false)
+                                isCorrectForLastQuestion = if (entry.has("isCorrectForLastQuestion")) entry.getBoolean("isCorrectForLastQuestion") else null
                             )
                         }
                     _quizEvents.value = QuizEvent.GameEnded(leaderboard)

@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.cahut.data.model.PlayingQuestion
 import com.example.cahut.data.model.QuizResult
-import com.example.cahut.data.model.LeaderboardEntry
+import LeaderboardEntry
 import com.example.cahut.data.service.SocketService
 import kotlinx.coroutines.launch
 import android.util.Log
@@ -722,7 +722,11 @@ fun PlayQuizScreen(
                                             .widthIn(max = 420.dp)
                                             .padding(vertical = 6.dp)
                                             .background(
-                                                color = Color(0xFFffc679),
+                                                color = when (entry.isCorrectForLastQuestion) {
+                                                    true -> Color(0xFF4CAF50) // Green for correct
+                                                    false -> Color(0xFFF44336) // Red for incorrect
+                                                    else -> Color(0xFFffc679) // Orange for not answered or unknown
+                                                },
                                                 shape = RoundedCornerShape(24.dp)
                                             )
                                             .border(2.dp, Color.Black, RoundedCornerShape(24.dp))

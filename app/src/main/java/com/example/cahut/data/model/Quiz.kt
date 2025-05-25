@@ -15,12 +15,4 @@ data class QuizResult(
     val correctAnswer: String,
     val type: String = "normal",
     val imageUrl: String? = null
-)
-
-data class LeaderboardEntry(
-    val id: String,
-    val rank: Int,
-    val username: String,
-    val score: Int,
-    val userImage: Int = 1
 ) 

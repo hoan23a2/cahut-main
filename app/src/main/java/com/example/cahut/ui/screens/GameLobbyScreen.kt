@@ -974,7 +974,8 @@ fun GameLobbyScreen(navController: NavController) {
             text = {
                 Text(
                     text = "Bạn có muốn tham gia phòng với mã: $scannedRoomId?",
-                    style = MaterialTheme.typography.bodyLarge
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color(0xFF00B074)
                 )
             },
             confirmButton = {
