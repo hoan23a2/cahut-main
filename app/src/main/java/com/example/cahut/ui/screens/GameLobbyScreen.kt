@@ -60,6 +60,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import coil.compose.rememberAsyncImagePainter
 import android.content.Context
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
 
 @Composable
 fun GameLobbyScreen(navController: NavController) {
@@ -81,16 +83,13 @@ fun GameLobbyScreen(navController: NavController) {
     val snackbarHostState = remember { SnackbarHostState() }
     var isPinError by remember { mutableStateOf(false) }
 
-    // QR code scanner result launcher
-    val qrScannerLauncher = rememberLauncherForActivityResult(
-        contract = StartActivityForResult()
+    // QR code scanner launcher
+    val barcodeLauncher = rememberLauncherForActivityResult(
+        contract = ScanContract()
     ) { result ->
-        if (result.resultCode == android.app.Activity.RESULT_OK) {
-            val contents = result.data?.getStringExtra("SCAN_RESULT")
-            if (contents != null) {
-                scannedRoomId = contents
-                showJoinRoomDialog = true
-            }
+        if (result.contents != null) {
+            scannedRoomId = result.contents
+            showJoinRoomDialog = true
         }
     }
 
@@ -99,9 +98,13 @@ fun GameLobbyScreen(navController: NavController) {
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            val intent = Intent("com.google.zxing.client.android.SCAN")
-            intent.putExtra("SCAN_MODE", "QR_CODE_MODE")
-            qrScannerLauncher.launch(intent)
+            val options = ScanOptions()
+                .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                .setPrompt("Quét mã QR để tham gia phòng")
+                .setBeepEnabled(false)
+                .setBarcodeImageEnabled(true)
+                .setOrientationLocked(false)
+            barcodeLauncher.launch(options)
         } else {
             scope.launch {
                 snackbarHostState.showSnackbar(
@@ -225,9 +228,13 @@ fun GameLobbyScreen(navController: NavController) {
                                     context,
                                     Manifest.permission.CAMERA
                                 ) == PackageManager.PERMISSION_GRANTED -> {
-                                    val intent = Intent("com.google.zxing.client.android.SCAN")
-                                    intent.putExtra("SCAN_MODE", "QR_CODE_MODE")
-                                    qrScannerLauncher.launch(intent)
+                                    val options = ScanOptions()
+                                        .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                                        .setPrompt("Quét mã QR để tham gia phòng")
+                                        .setBeepEnabled(false)
+                                        .setBarcodeImageEnabled(true)
+                                        .setOrientationLocked(false)
+                                    barcodeLauncher.launch(options)
                                 }
                                 else -> {
                                     cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
