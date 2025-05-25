@@ -12,6 +12,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import com.example.cahut.config.AppConfig
+import android.util.Log
 
 class AuthRepository(context: Context) {
     private val sharedPreferences: SharedPreferences = context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)
@@ -51,9 +52,12 @@ class AuthRepository(context: Context) {
                     Result.success(loginResponse)
                 } ?: Result.failure(Exception("Empty response body"))
             } else {
-                Result.failure(Exception(response.message()))
+                val errorBody = response.errorBody()?.string()
+                Log.e("AuthRepository", "Login failed with error: $errorBody")
+                Result.failure(Exception(errorBody ?: "Đăng nhập thất bại"))
             }
         } catch (e: Exception) {
+            Log.e("AuthRepository", "Login error", e)
             Result.failure(e)
         }
     }

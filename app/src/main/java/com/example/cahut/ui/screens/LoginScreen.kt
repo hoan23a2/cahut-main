@@ -37,6 +37,8 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import android.view.ViewTreeObserver
+import com.example.cahut.utils.showCustomToast
+import android.util.Log
 
 @Composable
 fun LoginScreen(navController: NavController) {
@@ -80,7 +82,19 @@ fun LoginScreen(navController: NavController) {
     
     LaunchedEffect(loginState.error) {
         loginState.error?.let { error ->
-            Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+            Log.d("LoginScreen", "Error received: $error")
+            val errorMessage = try {
+                val jsonObject = org.json.JSONObject(error)
+                val message = jsonObject.getString("message")
+                Log.d("LoginScreen", "Parsed error message: $message")
+                message
+            } catch (e: Exception) {
+                Log.e("LoginScreen", "Error parsing JSON: ${e.message}")
+                Log.e("LoginScreen", "Original error: $error")
+                error
+            }
+            Log.d("LoginScreen", "Showing toast with message: $errorMessage")
+            context.showCustomToast(errorMessage)
             viewModel.clearError()
         }
     }
@@ -149,24 +163,16 @@ fun LoginScreen(navController: NavController) {
                     shape = RoundedCornerShape(8.dp)
                 )
 
-                TextButton(
-                    onClick = { navController.navigate(Screen.ResetPassword.route) },
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text(
-                        text = "Quên mật khẩu?",
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
 
                 Spacer(modifier = Modifier.height(32.dp))
 
                 Button(
                     onClick = {
                         if (email.isNotEmpty() && password.isNotEmpty()) {
+                            Log.d("LoginScreen", "Attempting login with email: $email")
                             viewModel.login(email, password)
                         } else {
-                            Toast.makeText(context, "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show()
+                            context.showCustomToast("Vui lòng nhập đầy đủ thông tin")
                         }
                     },
                     modifier = Modifier

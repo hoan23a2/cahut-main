@@ -26,7 +26,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.foundation.clickable
-import android.widget.Toast
+import com.example.cahut.utils.showCustomToast
 import androidx.compose.ui.platform.LocalContext
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -66,10 +66,8 @@ fun WaitingRoomScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     fun showToast(message: String) {
-        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        context.showCustomToast(message)
     }
-
-
 
     LaunchedEffect(Unit) {
         Log.d("WaitingRoomScreen", "Connecting to room: $roomId")
