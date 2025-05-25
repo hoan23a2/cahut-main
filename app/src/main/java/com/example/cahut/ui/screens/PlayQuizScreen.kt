@@ -368,6 +368,7 @@ fun PlayQuizScreen(
                                     )
                                 ) {
                                     val baseUrl = AppConfig.getBaseUrl()
+                                    Log.e("QUIZZ", "Image: ${baseUrl}${question!!.imageUrl}")
                                     Image(
                                         painter = rememberAsyncImagePainter("${baseUrl}${question!!.imageUrl}"),
                                         contentDescription = "Question image",
