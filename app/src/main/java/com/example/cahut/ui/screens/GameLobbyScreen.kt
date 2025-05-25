@@ -445,13 +445,14 @@ fun GameLobbyScreen(navController: NavController) {
                 horizontalArrangement = Arrangement.Start,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.AccountCircle,
+                Image(
+                    painter = painterResource(id = context.resources.getIdentifier("a${JwtUtils.getUserImageFromToken(sharedPreferences.getString("auth_token", "") ?: "")}", "drawable", context.packageName)),
                     contentDescription = "Hồ Sơ",
                     modifier = Modifier
                         .size(40.dp)
+                        .clip(RoundedCornerShape(20.dp))
                         .clickable { scope.launch { drawerState.open() } },
-                    tint = MaterialTheme.colorScheme.onBackground
+                    contentScale = ContentScale.Fit
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Icon(

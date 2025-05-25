@@ -24,6 +24,7 @@ import com.example.cahut.ui.screens.QuizScoreScreen
 import com.example.cahut.ui.screens.QuizResultScreen
 import com.example.cahut.ui.screens.WaitingRoomScreen
 import com.example.cahut.ui.screens.EditQuestionsScreen
+import com.example.cahut.ui.screens.ResetPasswordScreen
 import com.example.cahut.ui.theme.GameLobbyTheme
 
 class MainActivity : ComponentActivity() {
@@ -46,6 +47,9 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(Screen.Register.route) {
                             RegisterScreen(navController)
+                        }
+                        composable(Screen.ResetPassword.route) {
+                            ResetPasswordScreen(navController)
                         }
                         composable(Screen.GameLobby.route) {
                             GameLobbyScreen(navController)

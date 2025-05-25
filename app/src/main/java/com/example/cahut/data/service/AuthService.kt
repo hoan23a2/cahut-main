@@ -6,6 +6,8 @@ import android.util.Log
 import com.example.cahut.config.AppConfig
 import com.example.cahut.data.api.ApiService
 import com.example.cahut.data.api.UpdateProfileRequest
+import com.example.cahut.data.api.ForgotPasswordRequest
+import com.example.cahut.data.api.ResetPasswordRequest
 import com.example.cahut.data.api.RetrofitClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -76,6 +78,46 @@ class AuthService(private val context: Context) {
             Log.e(TAG, "Error in updateProfile: ${e.message}")
             Log.e(TAG, "Stack trace: ${e.stackTraceToString()}")
             throw e
+        }
+    }
+
+    suspend fun forgotPassword(email: String): Result<String> {
+        return try {
+            val request = ForgotPasswordRequest(email)
+            val response = apiService.forgotPassword(request)
+            
+            if (response.isSuccessful) {
+                response.body()?.let {
+                    Result.success(it.message)
+                } ?: Result.failure(Exception("Empty response body"))
+            } else {
+                val errorBody = response.errorBody()?.string()
+                Log.e("AuthService", "Forgot password failed: $errorBody")
+                Result.failure(Exception(errorBody ?: "Unknown error"))
+            }
+        } catch (e: Exception) {
+            Log.e("AuthService", "Forgot password error", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun resetPassword(email: String, code: String, newPassword: String): Result<String> {
+        return try {
+            val request = ResetPasswordRequest(email, code, newPassword)
+            val response = apiService.resetPassword(request)
+            
+            if (response.isSuccessful) {
+                response.body()?.let {
+                    Result.success(it.message)
+                } ?: Result.failure(Exception("Empty response body"))
+            } else {
+                val errorBody = response.errorBody()?.string()
+                Log.e("AuthService", "Reset password failed: $errorBody")
+                Result.failure(Exception(errorBody ?: "Unknown error"))
+            }
+        } catch (e: Exception) {
+            Log.e("AuthService", "Reset password error", e)
+            Result.failure(e)
         }
     }
 } 

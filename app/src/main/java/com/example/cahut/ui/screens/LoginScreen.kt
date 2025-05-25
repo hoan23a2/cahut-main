@@ -150,7 +150,7 @@ fun LoginScreen(navController: NavController) {
                 )
 
                 TextButton(
-                    onClick = { /* Handle forgot password */ },
+                    onClick = { navController.navigate(Screen.ResetPassword.route) },
                     modifier = Modifier.align(Alignment.End)
                 ) {
                     Text(
@@ -217,10 +217,27 @@ fun LoginScreen(navController: NavController) {
                             navController.navigate(Screen.Register.route)
                         }
                     )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Quên mật khẩu?",
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.clickable {
+                            navController.navigate(Screen.ResetPassword.route)
+                        }
+                    )
+                }
+
             }
         }
-    }
 }
+
 
 @Preview(
     name = "Login Screen",

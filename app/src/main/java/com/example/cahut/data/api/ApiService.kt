@@ -124,6 +124,12 @@ interface ApiService {
         @Header("Authorization") token: String,
         @Body request: UpdateProfileRequest
     ): Response<UpdateProfileResponse>
+
+    @POST("api/auth/forgot-password")
+    suspend fun forgotPassword(@Body request: ForgotPasswordRequest): Response<ForgotPasswordResponse>
+
+    @POST("api/auth/reset-password")
+    suspend fun resetPassword(@Body request: ResetPasswordRequest): Response<ResetPasswordResponse>
 }
 
 data class CreateExamRequest(
@@ -162,4 +168,22 @@ data class UpdateProfileRequest(
 data class UpdateProfileResponse(
     val message: String,
     val token: String
+)
+
+data class ForgotPasswordRequest(
+    val email: String
+)
+
+data class ForgotPasswordResponse(
+    val message: String
+)
+
+data class ResetPasswordRequest(
+    val email: String,
+    val code: String,
+    val newPassword: String
+)
+
+data class ResetPasswordResponse(
+    val message: String
 ) 
