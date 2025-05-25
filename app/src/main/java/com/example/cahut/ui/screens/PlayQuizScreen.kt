@@ -368,7 +368,6 @@ fun PlayQuizScreen(
                                     )
                                 ) {
                                     val baseUrl = AppConfig.getBaseUrl()
-                                    Log.e("QUIZZ", "Image: ${baseUrl}${question!!.imageUrl}")
                                     Image(
                                         painter = rememberAsyncImagePainter("${baseUrl}${question!!.imageUrl}"),
                                         contentDescription = "Question image",
@@ -773,7 +772,7 @@ fun PlayQuizScreen(
                             }
                             // Thêm Spacer giữa Top 3 và danh sách 4-7
                             if (showTop3 && topScores.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(24.dp))
+                                Spacer(modifier = Modifier.height(48.dp))
                             }
                             // Danh sách 4-7 (không còn dòng 1-3 chỉ số thứ tự)
                             if (topScores.isNotEmpty()) {
@@ -890,7 +889,7 @@ fun PlayQuizScreen(
                             }
                             // Thêm Spacer giữa Top 3 và danh sách 4-7
                             if (showTop3 && rest.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(24.dp))
+                                Spacer(modifier = Modifier.height(48.dp))
                             }
                             // Danh sách 4-7 (không còn dòng 1-3 chỉ số thứ tự)
                             if (rest.isNotEmpty()) {
@@ -1040,8 +1039,6 @@ fun TopWinner(entry: LeaderboardEntry?, rank: Int, isChampion: Boolean = false) 
                     .size(32.dp) // Kích thước huy chương
                     .align(Alignment.BottomStart) // Căn góc dưới trái của Box container
                     .offset(x = (-12).dp, y = 12.dp) // Offset ra ngoài và xuống dưới
-                    .background(Color.White, CircleShape)
-                    .border(2.dp, Color.Black, CircleShape)
                     .zIndex(1f), // Đảm bảo nổi lên trên
                 contentAlignment = Alignment.Center
             ) {
