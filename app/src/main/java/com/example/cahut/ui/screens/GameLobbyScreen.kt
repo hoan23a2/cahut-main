@@ -75,6 +75,7 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
+import com.example.cahut.data.service.AuthService
 
 @Composable
 fun GameLobbyScreen(navController: NavController) {
@@ -95,6 +96,7 @@ fun GameLobbyScreen(navController: NavController) {
     val roomRepository = remember { RoomRepository(context) }
     val snackbarHostState = remember { SnackbarHostState() }
     var isPinError by remember { mutableStateOf(false) }
+    val authService = remember { AuthService(context) }
 
     // QR code scanner launcher
     val barcodeLauncher = rememberLauncherForActivityResult(
@@ -336,12 +338,54 @@ fun GameLobbyScreen(navController: NavController) {
                                 ) {
                                     Button(
                                         onClick = {
-                                            // TODO: Implement save profile functionality
+                                            if (currentPassword.isBlank()) {
+                                                scope.launch {
+                                                    snackbarHostState.showSnackbar(
+                                                        message = "Vui lòng nhập mật khẩu hiện tại để xác nhận!",
+                                                        duration = SnackbarDuration.Short
+                                                    )
+                                                }
+                                                return@Button
+                                            }
+                                            if (username.isBlank()) {
+                                                scope.launch {
+                                                    snackbarHostState.showSnackbar(
+                                                        message = "Vui lòng nhập tên người dùng!",
+                                                        duration = SnackbarDuration.Short
+                                                    )
+                                                }
+                                                return@Button
+                                            }
+
                                             scope.launch {
-                                                snackbarHostState.showSnackbar(
-                                                    message = "Chức năng đang được phát triển",
-                                                    duration = SnackbarDuration.Short
-                                                )
+                                                try {
+                                                    authService.updateProfile(
+                                                        username = username,
+                                                        userImage = userImage,
+                                                        newPassword = if (newPassword.isBlank()) null else newPassword,
+                                                        currentPassword = currentPassword
+                                                    )
+                                                    
+                                                    // Reset form
+                                                    currentPassword = ""
+                                                    newPassword = ""
+                                                    isEditing = false
+                                                    
+                                                    // Refresh token and user info
+                                                    val token = sharedPreferences.getString("auth_token", "") ?: ""
+                                                    username = JwtUtils.getUsernameFromToken(token) ?: ""
+                                                    userImage = JwtUtils.getUserImageFromToken(token)
+
+                                                    snackbarHostState.showSnackbar(
+                                                        message = "Cập nhật profile thành công!",
+                                                        duration = SnackbarDuration.Short
+                                                    )
+                                                } catch (e: Exception) {
+                                                    snackbarHostState.showSnackbar(
+                                                        message = "Lỗi khi cập nhật profile: ${e.message}",
+                                                        duration = SnackbarDuration.Short
+                                                    )
+                                                }
                                             }
                                         },
                                         modifier = Modifier.weight(1f),

@@ -118,6 +118,12 @@ interface ApiService {
         @Header("Authorization") token: String,
         @Body request: JoinRoomRequest
     ): Response<JoinRoomResponse>
+
+    @PUT("api/auth/update-profile")
+    suspend fun updateProfile(
+        @Header("Authorization") token: String,
+        @Body request: UpdateProfileRequest
+    ): Response<UpdateProfileResponse>
 }
 
 data class CreateExamRequest(
@@ -144,4 +150,16 @@ data class EditQuestionRequest(
     val correctAnswer: String,
     val timeLimit: Int,
     val type: String = "normal"
+)
+
+data class UpdateProfileRequest(
+    val username: String,
+    val userImage: Int,
+    val newPassword: String? = null,
+    val currentPassword: String
+)
+
+data class UpdateProfileResponse(
+    val message: String,
+    val token: String
 ) 
