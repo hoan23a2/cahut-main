@@ -128,25 +128,37 @@ fun PlayQuizScreen(
             val totalTimeLimit = currentQuestion.timeLimit
             val totalMs = currentQuestion.timeLimit * 1000L
             val startTime = System.currentTimeMillis()
-            var running = true
-            while (running) {
-                val elapsed = System.currentTimeMillis() - startTime
-                val left = (totalMs - elapsed).coerceAtLeast(0L)
-                timeLeftMs = left
-                val newTimeLeft = (left / 1000).toInt()
-                if (newTimeLeft != timeLeft) {
-                    timeLeft = newTimeLeft
+            
+            try {
+                while (true) {
+                    val elapsed = System.currentTimeMillis() - startTime
+                    val left = (totalMs - elapsed).coerceAtLeast(0L)
+                    timeLeftMs = left
+                    val newTimeLeft = (left / 1000).toInt()
+                    if (newTimeLeft != timeLeft) {
+                        timeLeft = newTimeLeft
+                    }
+                    if (left <= 0L) {
+                        break
+                    }
+                    delay(100) // Update every 100ms instead of 16ms
                 }
-                if (left <= 0L) {
-                    running = false
-                } else {
-                    delay(16)
+                
+                // Only submit answer and time up if we haven't already
+                if (!hasAnswered) {
+                    socketService.submitAnswer(roomId, "", 0)
+                    socketService.timeUp(roomId)
                 }
+            } catch (e: Exception) {
+                Log.e("PlayQuizScreen", "Timer error", e)
             }
-            timeLeft = 0
-            if (!hasAnswered) {
-                socketService.submitAnswer(roomId, "", 0)
-            }
+        }
+    }
+
+    // Add a separate effect to handle time-up events
+    LaunchedEffect(timeLeft) {
+        if (timeLeft == 0 && question != null && !hasAnswered) {
+            socketService.submitAnswer(roomId, "", 0)
             socketService.timeUp(roomId)
         }
     }
