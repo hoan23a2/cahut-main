@@ -1,5 +1,9 @@
 package com.example.cahut.ui.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -40,6 +44,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.BorderStroke
 import android.util.Log
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.rememberAsyncImagePainter
 
 // Data class to represent a question
 data class QuizQuestion(
@@ -49,7 +55,8 @@ data class QuizQuestion(
     var options: List<String> = listOf("", "", "", ""),
     var correctAnswer: String = "",
     var timeLimit: Int = 30,
-    var funFact: String = ""
+    var type: String = "normal",
+    var imageUri: Uri? = null
 )
 
 @Preview(
@@ -97,6 +104,18 @@ fun CreateQuizSlideScreen(
     fun updateQuestion(updatedQuestion: QuizQuestion) {
         questions = questions.map { 
             if (it.id == updatedQuestion.id) updatedQuestion else it 
+        }
+    }
+
+    // Image picker
+    val imagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            updateQuestion(currentQuestion.copy(
+                type = "image",
+                imageUri = uri
+            ))
         }
     }
 
@@ -198,7 +217,9 @@ fun CreateQuizSlideScreen(
                                                 question = question.question,
                                                 options = if (question.isMultipleChoice) question.options else listOf(question.correctAnswer),
                                                 correctAnswer = question.correctAnswer,
-                                                timeLimit = question.timeLimit
+                                                timeLimit = question.timeLimit,
+                                                type = question.type,
+                                                imageUri = question.imageUri
                                             )
                                             successCount++
                                         } catch (e: Exception) {
@@ -262,32 +283,41 @@ fun CreateQuizSlideScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(120.dp)
+                                .height(200.dp)
                                 .border(
                                     width = 2.dp,
                                     color = Color(0xFF00AFC6),
-                                    shape = MaterialTheme.shapes.medium
+                                    shape = RoundedCornerShape(16.dp)
                                 )
-                                .clickable { /* TODO: Handle image selection */ }
+                                .clickable { imagePicker.launch("image/*") }
                                 .padding(16.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = "Thêm Hình Ảnh",
-                                    modifier = Modifier.size(36.dp),
-                                    tint = Color(0xFF00AFC6)
+                            if (currentQuestion.imageUri != null) {
+                                Image(
+                                    painter = rememberAsyncImagePainter(currentQuestion.imageUri),
+                                    contentDescription = "Selected image",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Fit
                                 )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "Thêm Hình Ảnh (Tùy Chọn)",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = Color(0xFF00AFC6)
-                                )
+                            } else {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = "Thêm Hình Ảnh",
+                                        modifier = Modifier.size(36.dp),
+                                        tint = Color(0xFF00AFC6)
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "Thêm Hình Ảnh (Tùy Chọn)",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = Color(0xFF00AFC6)
+                                    )
+                                }
                             }
                         }
 
@@ -441,38 +471,6 @@ fun CreateQuizSlideScreen(
                                     )
                                 }
                             }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Fun Fact Input
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = Color(0xFFFFFBE6)
-                            ),
-                            shape = RoundedCornerShape(8.dp),
-                            border = BorderStroke(4.dp, Color(0xFF00AFC6))
-                        ) {
-                            TextField(
-                                value = currentQuestion.funFact,
-                                onValueChange = { 
-                                    updateQuestion(currentQuestion.copy(funFact = it))
-                                },
-                                label = { Text("Thông Tin Thêm (Tùy Chọn)", color = Color.Gray) },
-                                modifier = Modifier.fillMaxWidth(),
-                                minLines = 2,
-                                colors = TextFieldDefaults.colors(
-                                    focusedTextColor = Color(0xFF23616A),
-                                    unfocusedTextColor = Color(0xFF23616A),
-                                    focusedLabelColor = Color.Gray,
-                                    unfocusedLabelColor = Color.Gray,
-                                    focusedContainerColor = Color.Transparent,
-                                    unfocusedContainerColor = Color.Transparent
-                                )
-                            )
                         }
                     }
                 }

@@ -245,7 +245,11 @@ fun WaitingRoomScreen(
                                         )
                                     }
                                     Text(
-                                        text = player.username,
+                                        text = if (player.username.length > 9) {
+                                            player.username.substring(0, 9) + "..."
+                                        } else {
+                                            player.username
+                                        },
                                         color = Color.White,
                                         fontSize = 12.sp,
                                         modifier = Modifier.padding(top = 4.dp)

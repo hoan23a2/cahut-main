@@ -28,6 +28,9 @@ class SocketService(private val context: Context) {
     private val _isCreator = MutableStateFlow(false)
     val isCreator: StateFlow<Boolean> = _isCreator.asStateFlow()
     
+    private val _creatorId = MutableStateFlow("")
+    val creatorId: StateFlow<String> = _creatorId.asStateFlow()
+    
     private val _gameStarted = MutableStateFlow(false)
     val gameStarted: StateFlow<Boolean> = _gameStarted.asStateFlow()
 
@@ -99,6 +102,7 @@ class SocketService(private val context: Context) {
                     Log.d("SocketService", "creatorId: $creatorId")
                     Log.d("SocketService", "userId: $currentUserId")
                     _isCreator.value = currentUserId == creatorId
+                    _creatorId.value = creatorId
                     Log.d("SocketService", "Is creator: ${currentUserId == creatorId}")
                 } catch (e: Exception) {
                     Log.e("SocketService", "Error processing room-update: ${e.message}")
@@ -284,6 +288,7 @@ class SocketService(private val context: Context) {
         socket = null
         _players.value = emptyList()
         _isCreator.value = false
+        _creatorId.value = ""
         _gameStarted.value = false
         _roomDeleted.value = false
         _quizEvents.value = null
