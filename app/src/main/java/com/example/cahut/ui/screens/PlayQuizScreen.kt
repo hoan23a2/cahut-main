@@ -413,8 +413,7 @@ fun PlayQuizScreen(
                                 .weight(1f),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            if (question!!.type == "image" && question!!.imageUrl != null) {
-                                Card(
+                            if (question!!.type == "image" && question!!.imageUrl != null) {Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(horizontal = 16.dp)
