@@ -3,6 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
@@ -38,6 +40,8 @@
             android:name="com.journeyapps.barcodescanner.CaptureActivityPortrait"
             android:screenOrientation="portrait"
             tools:replace="screenOrientation" />
+
+        <service android:name=".service.BackgroundMusicService" />
     </application>
 
 </manifest>

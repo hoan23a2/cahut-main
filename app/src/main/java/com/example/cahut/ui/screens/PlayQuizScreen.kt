@@ -65,6 +65,8 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.zIndex
 import androidx.compose.foundation.BorderStroke
+import android.content.Intent
+import com.example.cahut.service.BackgroundMusicService
 
 
 @Composable
@@ -100,6 +102,8 @@ fun PlayQuizScreen(
     var showTop3 by remember { mutableStateOf(false) }
     var showTop2 by remember { mutableStateOf(false) }
     var showTop1 by remember { mutableStateOf(false) }
+    var showCompletionMessage by remember { mutableStateOf(false) }
+    var showFullLeaderboard by remember { mutableStateOf(false) }
     var displayedScores by remember { mutableStateOf<List<LeaderboardEntry>?>(null) }
     var showScoresAnimation by remember { mutableStateOf(false) }
 
@@ -110,11 +114,17 @@ fun PlayQuizScreen(
         currentUsername = JwtUtils.getUsernameFromToken(token) ?: ""
         currentUserId = JwtUtils.getUserIdFromToken(token) ?: ""
         socketService.connect(roomId)
+        
+        // Đảm bảo nhạc nền đang chạy
+        val intent = Intent(context, BackgroundMusicService::class.java)
+        context.startService(intent)
     }
 
     DisposableEffect(Unit) {
         onDispose {
             socketService.disconnect()
+            // Chỉ dừng nhạc khi rời khỏi màn hình
+            context.stopService(Intent(context, BackgroundMusicService::class.java))
         }
     }
 
@@ -262,24 +272,27 @@ fun PlayQuizScreen(
         showTop2 = false
         showTop1 = false
         showRest = false
+        showCompletionMessage = false
         delay(300)
         if (leaderboard != null && leaderboard!!.isNotEmpty()) {
             val sorted = leaderboard!!.sortedByDescending { it.score }
             val top3 = sorted.take(3)
             val rest = if (sorted.size > 3) sorted.drop(3).take(4) else emptyList()
             if (rest.isNotEmpty()) showRest = true
-            
+
             // Show top 3 first
             delay(500)
             showTop3 = true
             delay(1000)
-            
+
             // Then show top 2
             showTop2 = true
             delay(1000)
-            
-            // Finally show top 1
+
+            // Finally show top 1 and completion message
             showTop1 = true
+            delay(2000)
+            showCompletionMessage = true
         }
     }
 
@@ -293,6 +306,13 @@ fun PlayQuizScreen(
                 displayedScores = showScores
                 showScoresAnimation = true
             }
+        }
+    }
+
+    LaunchedEffect(showCompletionMessage) {
+        if (showCompletionMessage) {
+            // Khi hiện nút thoát/xóa, dừng nhạc nền
+            context.stopService(Intent(context, BackgroundMusicService::class.java))
         }
     }
 
@@ -318,7 +338,7 @@ fun PlayQuizScreen(
                         text = "#${roomId}",
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
+                        fontSize = 16.sp
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                     Icon(
@@ -346,7 +366,7 @@ fun PlayQuizScreen(
                     }
                     if (isHost && question != null && showResults == null) {
                         IconButton(
-                            onClick = { 
+                            onClick = {
                                 val token = sharedPreferences.getString("auth_token", "") ?: return@IconButton
                                 socketService.timeUp(roomId, token)
                             },
@@ -788,210 +808,226 @@ fun PlayQuizScreen(
                             .fillMaxHeight(),
                         contentAlignment = Alignment.Center
                     ) {
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .align(Alignment.Center),
-                            userScrollEnabled = false,
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            items(topScores, key = { it.id }) { entry ->
-                                val idx = topScores.indexOf(entry)
-                                var startAnimation by remember { mutableStateOf(false) }
-                                
-                                LaunchedEffect(entry.id) {
-                                    startAnimation = false
-                                    delay(1000)
-                                    startAnimation = true
-                                    delay(1000)
-                                }
-
-                                val progress by animateFloatAsState(
-                                    targetValue = if (startAnimation) 1f else 0f,
-                                    animationSpec = tween(
-                                        durationMillis = 500,
-                                        easing = androidx.compose.animation.core.LinearEasing
-                                    ),
-                                    label = "progress"
+                            // Thông báo vị trí hiện tại
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    "Bạn đang ở vị trí thứ ${displayedScores?.indexOfFirst { it.id == currentUserId }?.plus(1) ?: 0}",
+                                    color = Color.White,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
                                 )
+                            }
 
-                                val targetColor = when {
-                                    // Xử lý riêng cho câu 1
-                                    questionIndex == 0 && startAnimation -> {
-                                        when {
-                                            entry.isCorrectForLastQuestion == true -> Color(0xFFc6ea84)
-                                            entry.isCorrectForLastQuestion == false -> Color(0xFFffa7a0)
-                                            else -> Color(0xFFffa7a0)
-                                        }
+                            LazyColumn(
+                                modifier = Modifier.fillMaxWidth(),
+                                userScrollEnabled = false,
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                items(topScores, key = { it.id }) { entry ->
+                                    val idx = topScores.indexOf(entry)
+                                    var startAnimation by remember { mutableStateOf(false) }
+
+                                    LaunchedEffect(entry.id) {
+                                        startAnimation = false
+                                        delay(1000)
+                                        startAnimation = true
+                                        delay(1000)
                                     }
-                                    // Các câu khác
-                                    showScores != null && showScoresAnimation -> {
-                                        when {
-                                            entry.isCorrectForLastQuestion == true -> Color(0xFFc6ea84)
-                                            entry.isCorrectForLastQuestion == false -> Color(0xFFffa7a0)
-                                            else -> Color(0xFFffa7a0)
-                                        }
-                                    }
-                                    else -> Color(0xFFffc679)
-                                }
 
-                                val initialColor = Color(0xFFffc679)
-                                val intermediateColor = Color(0xFFffe4b3)
-
-                                Card(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(60.dp)
-                                        .padding(horizontal = 16.dp, vertical = 6.dp)
-                                        .animateItemPlacement(
-                                            animationSpec = tween(
-                                                durationMillis = 2000,
-                                                easing = androidx.compose.animation.core.FastOutSlowInEasing
-                                            )
+                                    val progress by animateFloatAsState(
+                                        targetValue = if (startAnimation) 1f else 0f,
+                                        animationSpec = tween(
+                                            durationMillis = 500,
+                                            easing = androidx.compose.animation.core.LinearEasing
                                         ),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = if (startAnimation) {
-                                            if (progress < 0.5f) {
-                                                lerp(initialColor, intermediateColor, progress * 2)
-                                            } else {
-                                                lerp(intermediateColor, targetColor, (progress - 0.5f) * 2)
+                                        label = "progress"
+                                    )
+
+                                    val targetColor = when {
+                                        questionIndex == 0 && startAnimation -> {
+                                            when {
+                                                entry.isCorrectForLastQuestion == true -> Color(0xFFc6ea84)
+                                                entry.isCorrectForLastQuestion == false -> Color(0xFFffa7a0)
+                                                else -> Color(0xFFffa7a0)
                                             }
-                                        } else initialColor
-                                    ),
-                                    shape = RoundedCornerShape(24.dp),
-                                    border = BorderStroke(2.dp, Color.Black)
-                                ) {
-                                    Row(
+                                        }
+                                        showScores != null && showScoresAnimation -> {
+                                            when {
+                                                entry.isCorrectForLastQuestion == true -> Color(0xFFc6ea84)
+                                                entry.isCorrectForLastQuestion == false -> Color(0xFFffa7a0)
+                                                else -> Color(0xFFffa7a0)
+                                            }
+                                        }
+                                        else -> Color(0xFFffc679)
+                                    }
+
+                                    val initialColor = Color(0xFFffc679)
+                                    val intermediateColor = Color(0xFFffe4b3)
+
+                                    Card(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        // Số thứ tự
-                                        Box(modifier = Modifier.width(32.dp), contentAlignment = Alignment.Center) {
-                                            Text(
-                                                text = "${idx + 1}",
-                                                fontWeight = FontWeight.Bold,
-                                                color = Color.Black,
-                                                fontSize = 20.sp,
-                                                style = LocalTextStyle.current.copy(
-                                                    drawStyle = androidx.compose.ui.graphics.drawscope.Stroke(width = 4f)
-                                                ),
-                                                textAlign = TextAlign.Center
-                                            )
-                                            Text(
-                                                text = "${idx + 1}",
-                                                fontWeight = FontWeight.Bold,
-                                                color = Color.White,
-                                                fontSize = 20.sp,
-                                                textAlign = TextAlign.Center
-                                            )
-                                        }
-                                        // Avatar
-                                        Box(
-                                            modifier = Modifier
-                                                .size(36.dp)
-                                                .clip(RoundedCornerShape(18.dp))
-                                                .background(Color(0xFFFFE49E))
-                                                .border(2.dp, Color.Black, RoundedCornerShape(18.dp)),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Image(
-                                                painter = painterResource(id = context.resources.getIdentifier("a${entry.userImage}", "drawable", context.packageName)),
-                                                contentDescription = "Player avatar",
-                                                modifier = Modifier.fillMaxSize(),
-                                                contentScale = ContentScale.Fit
-                                            )
-                                        }
-                                        Spacer(modifier = Modifier.width(12.dp))
-                                        // Tên người chơi
-                                        Box(
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .padding(end = 6.dp)
-                                        ) {
-                                            Text(
-                                                text = if (entry.username.length > 9) {
-                                                    entry.username.substring(0, 9) + "..."
+                                            .height(60.dp)
+                                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                                            .animateItemPlacement(
+                                                animationSpec = tween(
+                                                    durationMillis = 2000,
+                                                    easing = androidx.compose.animation.core.FastOutSlowInEasing
+                                                )
+                                            ),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = if (startAnimation) {
+                                                if (progress < 0.5f) {
+                                                    lerp(initialColor, intermediateColor, progress * 2)
                                                 } else {
-                                                    entry.username
-                                                },
-                                                color = Color.Black,
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 18.sp,
-                                                style = LocalTextStyle.current.copy(
-                                                    drawStyle = androidx.compose.ui.graphics.drawscope.Stroke(width = 4f)
-                                                ),
-                                                maxLines = 1,
-                                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                            )
-                                            Text(
-                                                text = if (entry.username.length > 9) {
-                                                    entry.username.substring(0, 9) + "..."
-                                                } else {
-                                                    entry.username
-                                                },
-                                                color = Color.White,
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 18.sp,
-                                                maxLines = 1,
-                                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                            )
-                                        }
-                                        // Nhãn host và điểm số
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.End,
-                                            modifier = Modifier.width(if (entry.id == creatorId) 110.dp else 90.dp)  // Giảm chiều rộng
-                                        ) {
-                                            if (entry.id == creatorId) {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .background(Color(0xFFFFE49E), RoundedCornerShape(8.dp))
-                                                        .border(2.dp, Color.Black, RoundedCornerShape(8.dp))
-                                                        .padding(horizontal = 8.dp, vertical = 2.dp),
-                                                    contentAlignment = Alignment.Center
-                                                ) {
-                                                    Text(
-                                                        text = "HOST",
-                                                        color = Color.Black,
-                                                        fontWeight = FontWeight.Bold,
-                                                        fontSize = 12.sp,
-                                                        style = LocalTextStyle.current.copy(
-                                                            drawStyle = androidx.compose.ui.graphics.drawscope.Stroke(width = 4f)
-                                                        )
-                                                    )
-                                                    Text(
-                                                        text = "HOST",
-                                                        color = Color.White,
-                                                        fontWeight = FontWeight.Bold,
-                                                        fontSize = 12.sp
-                                                    )
+                                                    lerp(intermediateColor, targetColor, (progress - 0.5f) * 2)
                                                 }
-                                                Spacer(modifier = Modifier.width(2.dp))
-                                            }
-                                            // Điểm
-                                            Box(
-                                                modifier = Modifier.width(90.dp),  // Giảm chiều rộng
-                                                contentAlignment = Alignment.CenterEnd
-                                            ) {
+                                            } else initialColor
+                                        ),
+                                        shape = RoundedCornerShape(24.dp),
+                                        border = BorderStroke(2.dp, Color.Black)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            // Số thứ tự
+                                            Box(modifier = Modifier.width(32.dp), contentAlignment = Alignment.Center) {
                                                 Text(
-                                                    text = "${entry.score}",
-                                                    color = Color.Black,
+                                                    text = "${idx + 1}",
                                                     fontWeight = FontWeight.Bold,
+                                                    color = Color.Black,
                                                     fontSize = 20.sp,
                                                     style = LocalTextStyle.current.copy(
                                                         drawStyle = androidx.compose.ui.graphics.drawscope.Stroke(width = 4f)
                                                     ),
-                                                    textAlign = TextAlign.End
+                                                    textAlign = TextAlign.Center
                                                 )
                                                 Text(
-                                                    text = "${entry.score}",
+                                                    text = "${idx + 1}",
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color.White,
+                                                    fontSize = 20.sp,
+                                                    textAlign = TextAlign.Center
+                                                )
+                                            }
+                                            // Avatar
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(36.dp)
+                                                    .clip(RoundedCornerShape(18.dp))
+                                                    .background(Color(0xFFFFE49E))
+                                                    .border(2.dp, Color.Black, RoundedCornerShape(18.dp)),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Image(
+                                                    painter = painterResource(id = context.resources.getIdentifier("a${entry.userImage}", "drawable", context.packageName)),
+                                                    contentDescription = "Player avatar",
+                                                    modifier = Modifier.fillMaxSize(),
+                                                    contentScale = ContentScale.Fit
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            // Tên người chơi
+                                            Box(
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .padding(end = 6.dp)
+                                            ) {
+                                                Text(
+                                                    text = if (entry.username.length > 9) {
+                                                        entry.username.substring(0, 9) + "..."
+                                                    } else {
+                                                        entry.username
+                                                    },
+                                                    color = Color.Black,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 18.sp,
+                                                    style = LocalTextStyle.current.copy(
+                                                        drawStyle = androidx.compose.ui.graphics.drawscope.Stroke(width = 4f)
+                                                    ),
+                                                    maxLines = 1,
+                                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                                )
+                                                Text(
+                                                    text = if (entry.username.length > 9) {
+                                                        entry.username.substring(0, 9) + "..."
+                                                    } else {
+                                                        entry.username
+                                                    },
                                                     color = Color.White,
                                                     fontWeight = FontWeight.Bold,
-                                                    fontSize = 20.sp,
-                                                    textAlign = TextAlign.End
+                                                    fontSize = 18.sp,
+                                                    maxLines = 1,
+                                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                                 )
+                                            }
+                                            // Nhãn host và điểm số
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.End,
+                                                modifier = Modifier.width(if (entry.id == creatorId) 110.dp else 90.dp)
+                                            ) {
+                                                if (entry.id == creatorId) {
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .background(Color(0xFFFFE49E), RoundedCornerShape(8.dp))
+                                                            .border(2.dp, Color.Black, RoundedCornerShape(8.dp))
+                                                            .padding(horizontal = 8.dp, vertical = 2.dp),
+                                                        contentAlignment = Alignment.Center
+                                                    ) {
+                                                        Text(
+                                                            text = "HOST",
+                                                            color = Color.Black,
+                                                            fontWeight = FontWeight.Bold,
+                                                            fontSize = 12.sp,
+                                                            style = LocalTextStyle.current.copy(
+                                                                drawStyle = androidx.compose.ui.graphics.drawscope.Stroke(width = 4f)
+                                                            )
+                                                        )
+                                                        Text(
+                                                            text = "HOST",
+                                                            color = Color.White,
+                                                            fontWeight = FontWeight.Bold,
+                                                            fontSize = 12.sp
+                                                        )
+                                                    }
+                                                    Spacer(modifier = Modifier.width(2.dp))
+                                                }
+                                                // Điểm
+                                                Box(
+                                                    modifier = Modifier.width(90.dp),
+                                                    contentAlignment = Alignment.CenterEnd
+                                                ) {
+                                                    Text(
+                                                        text = "${entry.score}",
+                                                        color = Color.Black,
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 20.sp,
+                                                        style = LocalTextStyle.current.copy(
+                                                            drawStyle = androidx.compose.ui.graphics.drawscope.Stroke(width = 4f)
+                                                        ),
+                                                        textAlign = TextAlign.End
+                                                    )
+                                                    Text(
+                                                        text = "${entry.score}",
+                                                        color = Color.White,
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 20.sp,
+                                                        textAlign = TextAlign.End
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -1008,6 +1044,17 @@ fun PlayQuizScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.TopCenter
                     ) {
+                        // Completion message at the top
+                        if (showCompletionMessage) {
+                            Text(
+                                "Bạn đã hoàn thành ở vị trí thứ ${sorted.indexOfFirst { it.id == currentUserId } + 1}",
+                                color = Color.White,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(top = 16.dp)
+                            )
+                        }
+
                         // Confetti cho quán quân
                         if (showTop3 && top3.isNotEmpty()) {
                             Box(
@@ -1015,14 +1062,10 @@ fun PlayQuizScreen(
                                     .fillMaxWidth()
                                     .height(60.dp)
                                     .align(Alignment.TopCenter)
-                                    .padding(top = 16.dp),
+                                    .padding(top = 48.dp),
                                 contentAlignment = Alignment.TopCenter
                             ) {
-                                Text(
-                                    "🎉🎉🎉",
-                                    fontSize = 36.sp,
-                                    modifier = Modifier.padding(top = 0.dp)
-                                )
+                                // Bỏ thông báo hoàn thành ở đây
                             }
                         }
 
@@ -1066,7 +1109,7 @@ fun PlayQuizScreen(
                                                 TopWinner(entry = top3.getOrNull(2), rank = 3)
                                             }
                                         }
-                                        
+
                                         // Position 1 (center)
                                         Box(
                                             modifier = Modifier
@@ -1080,7 +1123,7 @@ fun PlayQuizScreen(
                                                 TopWinner(entry = top3.getOrNull(0), rank = 1, isChampion = true)
                                             }
                                         }
-                                        
+
                                         // Position 2 (right)
                                         Box(
                                             modifier = Modifier
@@ -1095,6 +1138,7 @@ fun PlayQuizScreen(
                                             }
                                         }
                                     }
+
                                     // Danh sách 4-7
                                     if (rest.isNotEmpty()) {
                                         androidx.compose.animation.AnimatedVisibility(
@@ -1133,7 +1177,7 @@ fun PlayQuizScreen(
                                                             contentAlignment = Alignment.Center
                                                         ) {
                                                             Image(
-                                                                painter = painterResource(id = LocalContext.current.resources.getIdentifier("a${entry.userImage}", "drawable", LocalContext.current.packageName)),
+                                                                painter = painterResource(id = context.resources.getIdentifier("a${entry.userImage}", "drawable", context.packageName)),
                                                                 contentDescription = "Player avatar",
                                                                 modifier = Modifier.fillMaxSize(),
                                                                 contentScale = ContentScale.Fit
@@ -1162,52 +1206,80 @@ fun PlayQuizScreen(
                                 }
                             }
 
-                            // Bottom buttons
-                            if (isHost) {
-                                Button(
-                                    onClick = {
-                                        socketService.deleteRoom(roomId)
-                                        navController.navigate(Screen.GameLobby.route) {
-                                            popUpTo(Screen.PlayQuiz.route) { inclusive = true }
-                                        }
-                                    },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFFFF5252)
-                                    ),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 32.dp, vertical = 16.dp),
-                                    shape = RoundedCornerShape(24.dp)
+                            // Full leaderboard button and exit/delete button
+                            androidx.compose.animation.AnimatedVisibility(
+                                visible = showCompletionMessage,
+                                enter = fadeIn(animationSpec = tween(500)) + scaleIn(initialScale = 0.5f, animationSpec = tween(500))
+                            ) {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
-                                    Text(
-                                        text = "Xóa phòng",
-                                        color = Color.White,
-                                        modifier = Modifier.padding(vertical = 8.dp),
-                                        fontSize = 18.sp
-                                    )
-                                }
-                            } else {
-                                Button(
-                                    onClick = {
-                                        socketService.leaveRoom(roomId)
-                                        navController.navigate(Screen.GameLobby.route) {
-                                            popUpTo(Screen.PlayQuiz.route) { inclusive = true }
+                                    Button(
+                                        onClick = { showFullLeaderboard = true },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = Color(0xFF23616A)
+                                        ),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 32.dp, vertical = 8.dp),
+                                        shape = RoundedCornerShape(24.dp)
+                                    ) {
+                                        Text(
+                                            text = "Bảng xếp hạng đầy đủ",
+                                            color = Color.White,
+                                            modifier = Modifier.padding(vertical = 4.dp),
+                                            fontSize = 12.sp
+                                        )
+                                    }
+
+                                    if (isHost) {
+                                        Button(
+                                            onClick = {
+                                                socketService.deleteRoom(roomId)
+                                                navController.navigate(Screen.GameLobby.route) {
+                                                    popUpTo(Screen.PlayQuiz.route) { inclusive = true }
+                                                }
+                                            },
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = Color(0xFFFF5252)
+                                            ),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 32.dp, vertical = 8.dp),
+                                            shape = RoundedCornerShape(24.dp)
+                                        ) {
+                                            Text(
+                                                text = "Xóa phòng",
+                                                color = Color.White,
+                                                modifier = Modifier.padding(vertical = 4.dp),
+                                                fontSize = 12.sp
+                                            )
                                         }
-                                    },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFF00B074)
-                                    ),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 32.dp, vertical = 16.dp),
-                                    shape = RoundedCornerShape(24.dp)
-                                ) {
-                                    Text(
-                                        text = "Thoát phòng",
-                                        color = Color.White,
-                                        modifier = Modifier.padding(vertical = 8.dp),
-                                        fontSize = 18.sp
-                                    )
+                                    } else {
+                                        Button(
+                                            onClick = {
+                                                socketService.leaveRoom(roomId)
+                                                navController.navigate(Screen.GameLobby.route) {
+                                                    popUpTo(Screen.PlayQuiz.route) { inclusive = true }
+                                                }
+                                            },
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = Color(0xFF00B074)
+                                            ),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 32.dp, vertical = 8.dp),
+                                            shape = RoundedCornerShape(24.dp)
+                                        ) {
+                                            Text(
+                                                text = "Thoát phòng",
+                                                color = Color.White,
+                                                modifier = Modifier.padding(vertical = 4.dp),
+                                                fontSize = 12.sp
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1237,6 +1309,85 @@ fun PlayQuizScreen(
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
+    }
+
+    // Dialog hiển thị bảng xếp hạng đầy đủ
+    if (showFullLeaderboard && leaderboard != null) {
+        val sortedList = leaderboard!!.sortedByDescending { it.score }
+        AlertDialog(
+            onDismissRequest = { showFullLeaderboard = false },
+            title = {
+                Text(
+                    "Bảng xếp hạng đầy đủ",
+                    color = Color.Black,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 400.dp)
+                ) {
+                    items(sortedList) { entry ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "${sortedList.indexOf(entry) + 1}",
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Black,
+                                fontSize = 16.sp,
+                                modifier = Modifier.width(40.dp)
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(Color(0xFFFFE49E))
+                                    .border(2.dp, Color.Black, RoundedCornerShape(16.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Image(
+                                    painter = painterResource(id = context.resources.getIdentifier("a${entry.userImage}", "drawable", context.packageName)),
+                                    contentDescription = "Player avatar",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Fit
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = entry.username,
+                                color = Color.Black,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text(
+                                text = "${entry.score}",
+                                color = Color.Black,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { showFullLeaderboard = false }
+                ) {
+                    Text("Đóng", color = Color(0xFF23616A))
+                }
+            },
+            containerColor = Color.White,
+            titleContentColor = Color.Black,
+            textContentColor = Color.Black
+        )
     }
 }
 
@@ -1316,18 +1467,20 @@ fun TopWinner(entry: LeaderboardEntry?, rank: Int, isChampion: Boolean = false) 
             // Huy chương ở góc dưới trái, nằm ngoài vòng tròn avatar
             Box(
                 modifier = Modifier
-                    .size(32.dp)
+                    .size(24.dp)
                     .align(Alignment.BottomStart)
-                    .offset(x = (-12).dp, y = 12.dp)
+                    .offset(
+                        x = if (rank == 1) 2.dp else 0.dp,
+                        y = if (rank == 1) (-9).dp else (-9).dp
+                    )
                     .zIndex(1f)
                     .clip(CircleShape)
-                    .background(medalColors[rank] ?: Color.White)
-                    .border(2.dp, Color.Black, CircleShape),
+                    .background(medalColors[rank] ?: Color.White),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = medalIcons[rank] ?: "",
-                    fontSize = 20.sp
+                    fontSize = 16.sp
                 )
             }
         }

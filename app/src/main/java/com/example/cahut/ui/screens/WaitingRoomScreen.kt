@@ -25,6 +25,8 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.foundation.clickable
 import com.example.cahut.utils.showCustomToast
 import androidx.compose.ui.platform.LocalContext
@@ -46,6 +48,17 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import android.util.Log
 import androidx.compose.ui.layout.ContentScale
+import android.content.Intent
+import com.example.cahut.service.BackgroundMusicService
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalView
+import android.view.Window
+import androidx.core.view.WindowCompat
 
 @Composable
 fun WaitingRoomScreen(
@@ -55,7 +68,20 @@ fun WaitingRoomScreen(
     isHost: Boolean
 ) {
     val context = LocalContext.current
+    val view = LocalView.current
+    val backgroundColor = Color(0xFF0f3a40)
+    
+    // Cập nhật màu status bar
+    DisposableEffect(backgroundColor) {
+        val window = (view.context as android.app.Activity).window
+        window.statusBarColor = backgroundColor.toArgb()
+        WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
+        onDispose {}
+    }
+
     var showQrDialog by remember { mutableStateOf(false) }
+    var isMuted by remember { mutableStateOf(false) }
+    var volume by remember { mutableStateOf(0.5f) }
     val qrCodeBitmap = remember(roomId) { generateQRCode(roomId) }
     val socketService = remember { SocketService(context) }
     val players by socketService.players.collectAsState()
@@ -72,16 +98,21 @@ fun WaitingRoomScreen(
     LaunchedEffect(Unit) {
         Log.d("WaitingRoomScreen", "Connecting to room: $roomId")
         socketService.connect(roomId)
+        // Start background music
+        val intent = Intent(context, BackgroundMusicService::class.java)
+        context.startService(intent)
     }
 
     DisposableEffect(Unit) {
         onDispose {
             socketService.disconnect()
+            // Không dừng nhạc ở đây nữa vì sẽ chuyển sang PlayQuizScreen
         }
     }
 
     LaunchedEffect(gameStarted) {
         if (gameStarted) {
+            // Không dừng nhạc khi chuyển sang PlayQuizScreen
             navController.navigate(Screen.PlayQuiz.createRoute(roomId, isHost, players.size))
         }
     }
@@ -281,6 +312,7 @@ fun WaitingRoomScreen(
                         Button(
                             onClick = {
                                 socketService.deleteRoom(roomId)
+                                context.stopService(Intent(context, BackgroundMusicService::class.java))
                                 navController.navigate(Screen.GameLobby.route)
                             },
                             colors = ButtonDefaults.buttonColors(
@@ -319,6 +351,7 @@ fun WaitingRoomScreen(
                         Button(
                             onClick = {
                                 socketService.leaveRoom(roomId)
+                                context.stopService(Intent(context, BackgroundMusicService::class.java))
                                 navController.navigate(Screen.GameLobby.route)
                             },
                             colors = ButtonDefaults.buttonColors(
@@ -338,6 +371,59 @@ fun WaitingRoomScreen(
                         }
                     }
                 }
+            }
+        }
+
+        // Volume control at the bottom
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
+                .padding(horizontal = 24.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                IconButton(
+                    onClick = { 
+                        isMuted = !isMuted
+                        val intent = Intent(context, BackgroundMusicService::class.java).apply {
+                            action = "TOGGLE_MUTE"
+                        }
+                        context.startService(intent)
+                    },
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isMuted) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
+                        contentDescription = if (isMuted) "Bật âm thanh" else "Tắt âm thanh",
+                        tint = Color.White,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+                androidx.compose.material3.Slider(
+                    value = if (isMuted) 0f else volume,
+                    onValueChange = { 
+                        volume = it
+                        isMuted = false
+                        val intent = Intent(context, BackgroundMusicService::class.java).apply {
+                            action = "SET_VOLUME"
+                            putExtra("volume", it)
+                        }
+                        context.startService(intent)
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 8.dp),
+                    colors = SliderDefaults.colors(
+                        thumbColor = Color.White,
+                        activeTrackColor = Color(0xFF00B074),
+                        inactiveTrackColor = Color.White.copy(alpha = 0.3f)
+                    )
+                )
             }
         }
     }
