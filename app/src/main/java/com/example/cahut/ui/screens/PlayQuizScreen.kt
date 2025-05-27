@@ -98,6 +98,8 @@ fun PlayQuizScreen(
     var currentUserId by remember { mutableStateOf("") }
     var showRest by remember { mutableStateOf(false) }
     var showTop3 by remember { mutableStateOf(false) }
+    var showTop2 by remember { mutableStateOf(false) }
+    var showTop1 by remember { mutableStateOf(false) }
     var displayedScores by remember { mutableStateOf<List<LeaderboardEntry>?>(null) }
     var showScoresAnimation by remember { mutableStateOf(false) }
 
@@ -256,16 +258,28 @@ fun PlayQuizScreen(
     }
 
     LaunchedEffect(leaderboard) {
-        showRest = false
         showTop3 = false
+        showTop2 = false
+        showTop1 = false
+        showRest = false
         delay(300)
         if (leaderboard != null && leaderboard!!.isNotEmpty()) {
             val sorted = leaderboard!!.sortedByDescending { it.score }
             val top3 = sorted.take(3)
             val rest = if (sorted.size > 3) sorted.drop(3).take(4) else emptyList()
             if (rest.isNotEmpty()) showRest = true
-            delay(1000)
+            
+            // Show top 3 first
+            delay(500)
             showTop3 = true
+            delay(1000)
+            
+            // Then show top 2
+            showTop2 = true
+            delay(1000)
+            
+            // Finally show top 1
+            showTop1 = true
         }
     }
 
@@ -1032,21 +1046,54 @@ fun PlayQuizScreen(
                                     verticalArrangement = Arrangement.Center
                                 ) {
                                     // Top 3
-                                    androidx.compose.animation.AnimatedVisibility(
-                                        visible = showTop3,
-                                        enter = fadeIn() + scaleIn()
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(top = 16.dp)
+                                            .height(160.dp),
+                                        horizontalArrangement = Arrangement.SpaceEvenly,
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Row(
+                                        // Position 3 (left)
+                                        Box(
                                             modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(top = 16.dp)
-                                                .height(160.dp),
-                                            horizontalArrangement = Arrangement.SpaceEvenly,
-                                            verticalAlignment = Alignment.CenterVertically
+                                                .width(90.dp)
+                                                .offset(y = 40.dp)
                                         ) {
-                                            TopWinner(entry = top3.getOrNull(1), rank = 2)
-                                            TopWinner(entry = top3.getOrNull(0), rank = 1, isChampion = true)
-                                            TopWinner(entry = top3.getOrNull(2), rank = 3)
+                                            androidx.compose.animation.AnimatedVisibility(
+                                                visible = showTop3,
+                                                enter = fadeIn(animationSpec = tween(500)) + scaleIn(initialScale = 0.5f, animationSpec = tween(500))
+                                            ) {
+                                                TopWinner(entry = top3.getOrNull(2), rank = 3)
+                                            }
+                                        }
+                                        
+                                        // Position 1 (center)
+                                        Box(
+                                            modifier = Modifier
+                                                .width(90.dp)
+                                                .offset(y = (-40).dp)
+                                        ) {
+                                            androidx.compose.animation.AnimatedVisibility(
+                                                visible = showTop1,
+                                                enter = fadeIn(animationSpec = tween(500)) + scaleIn(initialScale = 0.5f, animationSpec = tween(500))
+                                            ) {
+                                                TopWinner(entry = top3.getOrNull(0), rank = 1, isChampion = true)
+                                            }
+                                        }
+                                        
+                                        // Position 2 (right)
+                                        Box(
+                                            modifier = Modifier
+                                                .width(90.dp)
+                                                .offset(y = 40.dp)
+                                        ) {
+                                            androidx.compose.animation.AnimatedVisibility(
+                                                visible = showTop2,
+                                                enter = fadeIn(animationSpec = tween(500)) + scaleIn(initialScale = 0.5f, animationSpec = tween(500))
+                                            ) {
+                                                TopWinner(entry = top3.getOrNull(1), rank = 2)
+                                            }
                                         }
                                     }
                                     // Danh sách 4-7
@@ -1095,11 +1142,7 @@ fun PlayQuizScreen(
                                                         }
                                                         Spacer(modifier = Modifier.width(12.dp))
                                                         Text(
-                                                            text = if (entry.username.length > 9) {
-                                                                entry.username.substring(0, 9) + "..."
-                                                            } else {
-                                                                entry.username
-                                                            },
+                                                            text = entry.username,
                                                             color = Color.Black,
                                                             fontWeight = FontWeight.Bold,
                                                             fontSize = 18.sp
@@ -1207,15 +1250,25 @@ fun TopWinner(entry: LeaderboardEntry?, rank: Int, isChampion: Boolean = false) 
         2 to "\uD83E\uDD48", // 🥈
         3 to "\uD83E\uDD49"  // 🥉
     )
+    val medalColors = mapOf(
+        1 to Color(0xFFfcd734), // Gold background
+        2 to Color(0xFFd0cecc), // Silver background
+        3 to Color(0xFFffa623)  // Bronze background
+    )
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.width(IntrinsicSize.Min)
     ) {
         // Tên (trắng, viền đen, trên avatar)
-        Box(modifier = Modifier.padding(bottom = 4.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier
+                .padding(bottom = 4.dp)
+                .width(120.dp),  // Tăng chiều rộng
+            contentAlignment = Alignment.Center
+        ) {
             Text(
-                text = if (entry.username.length > 9) {
-                    entry.username.substring(0, 9) + "..."
+                text = if (entry.username.length > 12) {
+                    entry.username.substring(0, 12) + "..."
                 } else {
                     entry.username
                 },
@@ -1225,18 +1278,22 @@ fun TopWinner(entry: LeaderboardEntry?, rank: Int, isChampion: Boolean = false) 
                 style = LocalTextStyle.current.copy(
                     drawStyle = androidx.compose.ui.graphics.drawscope.Stroke(width = 6f)
                 ),
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
             Text(
-                text = if (entry.username.length > 9) {
-                    entry.username.substring(0, 9) + "..."
+                text = if (entry.username.length > 12) {
+                    entry.username.substring(0, 12) + "..."
                 } else {
                     entry.username
                 },
                 color = Color.White,
                 fontWeight = FontWeight.Bold,
                 fontSize = if (isChampion) 22.sp else 18.sp,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
         }
         // Container chứa Avatar và Huy chương
@@ -1263,7 +1320,10 @@ fun TopWinner(entry: LeaderboardEntry?, rank: Int, isChampion: Boolean = false) 
                     .size(32.dp)
                     .align(Alignment.BottomStart)
                     .offset(x = (-12).dp, y = 12.dp)
-                    .zIndex(1f),
+                    .zIndex(1f)
+                    .clip(CircleShape)
+                    .background(medalColors[rank] ?: Color.White)
+                    .border(2.dp, Color.Black, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
